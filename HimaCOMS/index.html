@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>日韓氣象衛星演進時間軸 (相對路徑 SAT 版)</title>
+    <style>
+        body { 
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; 
+            background: #0b1329; 
+            color: #fff; 
+            padding: 40px 20px; 
+            margin: 0; 
+            overflow-x: auto; 
+        }
+        /*METEOROLOGICAL SATELLITE ROADMAP*/
+        .header { text-align: center; margin-bottom: 50px; }
+        .header h1 { font-size: 28px; color: #38bdf8; margin: 0 0 10px 0; font-weight: bold; }
+
+        .timeline-container { 
+            position: relative; 
+            min-width: 1500px; 
+            max-width: 1700px; 
+            height: 750px; 
+            margin: 0 auto; 
+        }
+        
+        /* 中央漸層主線 */
+        .main-line { 
+            position: absolute; 
+            top: 50%; 
+            transform: translateY(-50%);
+            width: 100%; 
+            height: 10px; 
+            background: linear-gradient(to right, #1e3a8a, #0284c7, #eab308, #22c55e, #a855f7, #6366f1); 
+            border-radius: 5px; 
+            z-index: 1;
+        }
+
+        /* 側邊標籤 */
+        .faction-label {
+            position: absolute;
+            left: -40px; 
+            font-size: 24px;
+            font-weight: bold;
+            padding: 8px 15px;
+            border-radius: 6px;
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid #334155;
+            z-index: 10;
+            text-align: center;
+            line-height: 1.3;
+        }
+        .faction-label.jp { top: 38%; transform: translateY(-100%); color: #fbbf24; border-left: 4px solid #fbbf24; }
+        .faction-label.kr { top: 62%; color: #38bdf8; border-left: 4px solid #38bdf8; }
+
+        /* 中央年份標籤 */
+        .year-dot { 
+            position: absolute; 
+            top: 50%; 
+            transform: translate(-50%, -50%); 
+            background: #1e293b; 
+            border: 3px solid #fff; 
+            border-radius: 20px; 
+            padding: 4px 14px; 
+            font-size: 14px; 
+            font-weight: bold; 
+            z-index: 10; 
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .node { position: absolute; width: 190px; display: flex; flex-direction: column; align-items: center; transform: translateX(-50%); z-index: 5; }
+        .top-node { bottom: 50%; }
+        .bottom-node { top: 50%; }
+
+        .connector { width: 3px; height: 35px; }
+        .top-node .connector { background: #fbbf24; }
+        .bottom-node .connector { background: #38bdf8; }
+
+        .circle { 
+            width: 120px; height: 120px; border-radius: 50%; border: 4px solid #fff; 
+            background: #0f172a; display: flex; align-items: center; justify-content: center; 
+            overflow: hidden; transition: transform 0.3s; 
+        }
+        .circle img { width: 100%; height: 100%; object-fit: contain; }
+        .circle:hover { transform: scale(1.1); }
+        .top-node .circle { border-color: #fbbf24; margin-bottom: 8px; }
+        .bottom-node .circle { border-color: #38bdf8; margin-top: 8px; }
+
+       /* 衛星說明 */
+        .card { background: rgba(30, 41, 59, 0.85); padding: 10px; border-radius: 8px; width: 140%; border: 1px solid #334155; text-align: left; }
+        .top-node .card { margin-bottom: 12px; border-top: 3px solid #fbbf24; }
+        .bottom-node .card { margin-top: 12px; border-bottom: 3px solid #38bdf8; }
+        .card h4 { margin: 0 0 5px 0; font-size: 30px; border-bottom: 1px solid #475569; padding-bottom: 3px; }
+        .card p { margin: 0; color: #cbd5e1; font-size: 26px; line-height: 1.4; }
+
+        /* 時間位置 */
+        .p1977 { left: 12%; }  
+        .p1995 { left: 30%; }
+        .p2005 { left: 47%; }
+        .p2010 { left: 54%; }
+        .p2014 { left: 65%; }
+        .p2018 { left: 75%; }
+        .p2028 { left: 86%; }
+        .p2031 { left: 96%; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1> </h1>
+    </div>
+
+    <div class="timeline-container">
+        <div class="faction-label jp">日本<br>Himawari</div>
+        <div class="faction-label kr">韓國<br>COMS/GK</div>
+
+        <div class="main-line"></div>
+        
+        <div class="year-dot p1977">1977</div>
+        <div class="year-dot p1995">1995</div>
+        <div class="year-dot p2005">2005</div>
+        <div class="year-dot p2010">2010</div>
+        <div class="year-dot p2014">2014</div>
+        <div class="year-dot p2018">2018</div>
+        <div class="year-dot p2028">2028</div>
+        <div class="year-dot p2031">2031</div>
+
+        <div class="node top-node p1977">
+            <div class="card"><h4>GMS 1-4</h4><p>■ <b>自旋穩定體制</b><br>■ 日本首代靜止衛星<br>■ 搭載 VISSR 感測器</p></div>
+            <div class="circle"><img src="SAT/GMS1.png" alt="GMS1"></div>
+            <div class="connector"></div>
+        </div>
+
+        <div class="node top-node p1995">
+            <div class="card"><h4>GMS 5</h4><p>■ 新增水氣觀測頻道<br>■ 自旋體制技術終點</p></div>
+            <div class="circle"><img src="SAT/GMS5.png" alt="GMS5"></div>
+            <div class="connector"></div>
+        </div>
+
+        <div class="node top-node p2005">
+            <div class="card"><h4>MTSAT 1-2</h4><p>■ <b>轉換為三軸穩定</b><br>■ 強化夜間低雲觀測<br>■ 兼具氣象與航管</p></div>
+            <div class="circle"><img src="SAT/MTSAT.png" alt="MTSAT"></div>
+            <div class="connector"></div>
+        </div>
+
+        <div class="node top-node p2014">
+            <div class="card"><h4>Himawari 8, 9</h4><p>■ <b>AHI 進階成像儀</b><br>■ 16 個觀測波段<br>■ 10分鐘全圓盤掃描</p></div>
+            <div class="circle"><img src="SAT/H89.png" alt="H89"></div>
+            <div class="connector"></div>
+        </div>
+
+        <div class="node top-node p2028">
+            <div class="card"><h4>Himawari 10</h4><p>■ <b>高光譜紅外探測儀</b><br>■ 3D 垂直剖面觀測</p></div>
+            <div class="circle"><img src="SAT/H10.png" alt="H10"></div>
+            <div class="connector"></div>
+        </div>
+
+        <div class="node bottom-node p2010">
+            <div class="connector"></div>
+            <div class="circle"><img src="SAT/COMS1.png" alt="COMS1"></div>
+            <div class="card"><h4>COMS-1</h4><p>■ 韓國首顆靜止軌道星<br>■ 複合氣象/海洋觀測</p></div>
+        </div>
+
+        <div class="node bottom-node p2018">
+            <div class="connector"></div>
+            <div class="circle"><img src="SAT/GK2.png" alt="GK2"></div>
+            <div class="card"><h4>GK-2A / 2B</h4><p>■ AMI 成像儀 (16波段)<br>■ GEMS 大氣環境監測</p></div>
+        </div>
+
+        <div class="node bottom-node p2031">
+            <div class="connector"></div>
+            <div class="circle"><img src="SAT/GK5.png" alt="GK5"></div>
+            <div class="card"><h4>GEO-KOMPSAT-5</h4><p>■ 18 通道成像技術<br>■ 強化極端天氣追蹤</p></div>
+        </div>
+
+    </div>
+
+</body>
+</html>
