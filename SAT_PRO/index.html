@@ -160,7 +160,7 @@
         setupMapSelector();
         setupRadiusSliders(); // 啟用遠近控制器
 
-        new THREE.TextureLoader().load('City_Light_ETOPO.png', t => {
+        new THREE.TextureLoader().load('ETOPO_CLD.png', t => {
             globe.material.map = t;
             globe.material.color.setHex(0xffffff);
             globe.material.needsUpdate = true;
