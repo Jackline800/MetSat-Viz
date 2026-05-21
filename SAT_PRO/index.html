@@ -24,7 +24,19 @@
         button { background: var(--accent); color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 5px; }
         
         #library { border: 1px solid #eee; border-radius: 5px; padding: 5px; margin-top: 10px; background: #fafafa; }
-        .cat-title { background: #eef2f7; padding: 5px 10px; font-size: 0.75rem; font-weight: bold; margin-top: 10px; border-radius: 3px; color: #2980b9; }
+        
+        /* 升級：收合式選單 UI 樣式 */
+        .cat-title { 
+            background: #eef2f7; padding: 8px 10px; font-size: 0.75rem; font-weight: bold; 
+            margin-top: 10px; border-radius: 3px; color: #2980b9; 
+            cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+            transition: background 0.2s;
+            user-select: none;
+        }
+        .cat-title:hover { background: #d6eaf8; }
+        .cat-content { display: none; padding: 0 5px; }
+        .cat-content.open { display: block; animation: slideDown 0.3s ease-out; }
+        
         .lib-item { display: flex; align-items: center; justify-content: space-between; font-size: 0.72rem; padding: 5px 0; border-bottom: 1px solid #f2f2f2; }
         .lib-info { display: flex; align-items: center; }
         .lib-info input { width: auto; margin-right: 8px; }
@@ -35,6 +47,11 @@
             padding: 2px 6px; border-radius: 4px; font-size: 10px;
             pointer-events: none; white-space: nowrap; transform: translate(-50%, -140%);
             border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
@@ -77,7 +94,7 @@
     </div>
 
     <div class="group">
-        <label>4. 衛星庫 (勾選顯示 / 換圖)</label>
+        <label>4. 衛星庫 (點擊分類展開/收合)</label>
         <div id="library"></div>
     </div>
 
@@ -111,7 +128,7 @@
     let geoRadius = 3.65, leoRadius = 3.25; 
     const activeSats = new Map(), labelPairs = [];
 
-    // 【載入究極完整數據】：包含靜止軌道、100% 氣象與環境繞極衛星全列表
+    // 【載入究極完整數據】：100% 全陣列
     const satDatabase = [
         // ====== GEO 靜止軌道 ======
         { cat: "GEO 靜止軌道", name: "Himawari-9 (140.7E)", lon: 140.7, lat: 0, orb: "GEO", color: 0xffa502, icon: "衛星/地球同步/H89.png" },
@@ -173,7 +190,7 @@
         { cat: "低軌/繞極 (氣象為主)", name: "Meteor-M N2-8", lon: 330, lat: 0, orb: "LEO", color: 0x9b59b6 },
         { cat: "低軌/繞極 (氣象為主)", name: "AOS-HAWCSat", lon: 341, lat: 0, orb: "LEO", color: 0xff9f43 },
 
-        // ====== LEO 低軌/繞極軌道 (環境為主) 100% 全陣列 ====== 
+        // ====== LEO 低軌/繞極軌道 (環境為主) ====== 
         { cat: "低軌/繞極 (環境為主)", name: "Terra", lon: 2, lat: 0, orb: "LEO", color: 0x00b894 },
         { cat: "低軌/繞極 (環境為主)", name: "Aqua", lon: 7, lat: 0, orb: "LEO", color: 0x0984e3 },
         { cat: "低軌/繞極 (環境為主)", name: "Aura", lon: 12, lat: 0, orb: "LEO", color: 0x6c5ce7 },
@@ -326,18 +343,56 @@
         };
     }
 
+    // ★ 升級版的 buildLibrary：加入群組收合邏輯 ★
     function buildLibrary() {
-        const lib = document.getElementById('library'); lib.innerHTML = '';
-        let lastCat = "";
+        const lib = document.getElementById('library'); 
+        lib.innerHTML = '';
+        
+        // 1. 將衛星依照分類 (cat) 進行分組
+        const categories = {};
         satDatabase.forEach((sat, i) => {
-            if (sat.cat !== lastCat) {
-                const t = document.createElement('div'); t.className = 'cat-title'; t.innerText = sat.cat;
-                lib.appendChild(t); lastCat = sat.cat;
-            }
-            const item = document.createElement('div'); item.className = 'lib-item';
-            item.innerHTML = `<div class="lib-info"><input type="checkbox" id="chk-${i}" onchange="toggleSat(${i})"><span>${sat.name}</span></div><button class="change-btn" onclick="triggerFile(${i})">換圖</button>`;
-            lib.appendChild(item);
+            if (!categories[sat.cat]) categories[sat.cat] = [];
+            categories[sat.cat].push({ sat: sat, index: i });
         });
+
+        // 2. 建立收合式 UI
+        for (const [catName, items] of Object.entries(categories)) {
+            // 建立可點擊的分類標題
+            const header = document.createElement('div');
+            header.className = 'cat-title';
+            // 顯示分類名稱與該分類的衛星數量，預設箭頭向下 (▼)
+            header.innerHTML = `<span>${catName} (${items.length})</span><span class="cat-icon">▼</span>`;
+            
+            // 建立隱藏的內容容器
+            const content = document.createElement('div');
+            content.className = 'cat-content';
+            
+            // 點擊展開/收合事件
+            header.onclick = () => {
+                const isOpen = content.classList.contains('open');
+                content.classList.toggle('open');
+                header.querySelector('.cat-icon').innerText = isOpen ? '▼' : '▲';
+            };
+
+            // 將該分類下的衛星逐一放入容器中
+            items.forEach(item => {
+                const idx = item.index;
+                const sat = item.sat;
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'lib-item';
+                itemDiv.innerHTML = `
+                    <div class="lib-info">
+                        <input type="checkbox" id="chk-${idx}" onchange="toggleSat(${idx})">
+                        <span>${sat.name}</span>
+                    </div>
+                    <button class="change-btn" onclick="triggerFile(${idx})">換圖</button>
+                `;
+                content.appendChild(itemDiv);
+            });
+
+            lib.appendChild(header);
+            lib.appendChild(content);
+        }
     }
 
     function toggleRotation() { isRotating = !isRotating; document.getElementById('rot-btn').innerText = isRotating ? "暫停" : "開始"; }
@@ -466,9 +521,20 @@
         
         satDatabase.push({ cat: category, name: n, lon: lo, lat: la, orb: orb, color: color, icon: iconPath });
         buildLibrary(); 
+        
+        // 新增衛星後自動幫您勾選，並確保該分類處於「展開」狀態以便檢視
         const idx = satDatabase.length - 1;
         document.getElementById(`chk-${idx}`).checked = true; 
         toggleSat(idx);
+        
+        // 找到最後一個分類容器（因為手動新增一定在最後）並強制展開
+        const allContents = document.querySelectorAll('.cat-content');
+        const lastContent = allContents[allContents.length - 1];
+        if (lastContent && !lastContent.classList.contains('open')) {
+            lastContent.classList.add('open');
+            const lastHeaderIcon = lastContent.previousElementSibling.querySelector('.cat-icon');
+            if (lastHeaderIcon) lastHeaderIcon.innerText = '▲';
+        }
     }
 
     window.addEventListener('resize', () => {
