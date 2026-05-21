@@ -90,17 +90,19 @@
     let scene, camera, renderer, globe, controls, isRotating = true, targetIdx = null;
     const activeSats = new Map(), labelPairs = [];
 
+    // 衛星資料庫：已設定相對路徑。未指定 icon 的衛星會自動維持小圓點狀態
     const satDatabase = [
-        // --- GEO Core ---
-        { cat: "GEO 靜止軌道", name: "Himawari-9 (140.7E)", lon: 140.7, lat: 0, orb: "GEO", color: 0xffa502, icon: "衛星/Himawari-9.png" },
-        { cat: "GEO 靜止軌道", name: "GOES-18 (137.2W)", lon: -137.2, lat: 0, orb: "GEO", color: 0x70a1ff },
-        { cat: "GEO 靜止軌道", name: "GOES-16 (75.2W)", lon: -75.2, lat: 0, orb: "GEO", color: 0x70a1ff },
+        // --- GEO Core 地球同步衛星 ---
+        { cat: "GEO 靜止軌道", name: "Himawari-9 (140.7E)", lon: 140.7, lat: 0, orb: "GEO", color: 0xffa502, icon: "衛星/地球同步/H89.png" },
+        { cat: "GEO 靜止軌道", name: "Himawari-8 (140.7E)", lon: 140.7, lat: 0, orb: "GEO", color: 0xff7f50, icon: "衛星/地球同步/H89.png" },
+        { cat: "GEO 靜止軌道", name: "GOES-18 (137.2W)", lon: -137.2, lat: 0, orb: "GEO", color: 0x70a1ff, icon: "衛星/地球同步/GOES-R.png" },
+        { cat: "GEO 靜止軌道", name: "GOES-16 (75.2W)", lon: -75.2, lat: 0, orb: "GEO", color: 0x70a1ff, icon: "衛星/地球同步/GOES-R_16.png" },
         { cat: "GEO 靜止軌道", name: "Meteosat-12 (0.3W)", lon: -0.3, lat: 0, orb: "GEO", color: 0x2ed573 },
         { cat: "GEO 靜止軌道", name: "FY-4B (105E)", lon: 105, lat: 0, orb: "GEO", color: 0xff4757 },
         { cat: "GEO 靜止軌道", name: "GK-2A (128.2E)", lon: 128.2, lat: 0, orb: "GEO", color: 0x54a0ff },
         { cat: "GEO 靜止軌道", name: "INSAT-3DR (74E)", lon: 74, lat: 0, orb: "GEO", color: 0xe67e22 },
 
-        // --- LEO SSO (動態繞極) ---
+        // --- LEO SSO 繞極/低軌衛星 (未來圖檔請放置於 衛星/繞極/ 資料夾下) ---
         { cat: "LEO 繞極軌道", name: "Metop-C (Morning)", lon: 0, lat: 0, orb: "LEO", color: 0x1dd1a1 },
         { cat: "LEO 繞極軌道", name: "Metop-B (Morning)", lon: 0, lat: 0, orb: "LEO", color: 0x1dd1a1 },
         { cat: "LEO 繞極軌道", name: "NOAA-21 (Afternoon)", lon: 0, lat: 0, orb: "LEO", color: 0x2ecc71 },
@@ -108,7 +110,7 @@
         { cat: "LEO 繞極軌道", name: "FY-3F (Morning)", lon: 0, lat: 0, orb: "LEO", color: 0xee5253 },
         { cat: "LEO 繞極軌道", name: "FY-3E (Early Morning)", lon: 0, lat: 0, orb: "LEO", color: 0xee5253 },
 
-        // --- Research ---
+        // --- Research 特殊研究軌道 ---
         { cat: "特殊/研究軌道", name: "COSMIC-2 (Inclined)", lon: 121.5, lat: 23.5, orb: "LEO", color: 0x5f27cd },
         { cat: "特殊/研究軌道", name: "GPM-Core (Rain)", lon: -10, lat: 35, orb: "LEO", color: 0x00d2d3 },
         { cat: "特殊/研究軌道", name: "Sentinel-6", lon: 180, lat: -20, orb: "LEO", color: 0x48dbfb }
@@ -126,10 +128,9 @@
         controls.enableDamping = true;
         controls.minDistance = 4; controls.maxDistance = 25;
 
-        // 修正：預設地球材質直接讀取同層資料夾下的 City_Light_ETOPO.png
-        const textureLoader = new THREE.TextureLoader();
-        const defaultMap = textureLoader.load('City_Light_ETOPO.png');
-        globe = new THREE.Mesh(new THREE.SphereGeometry(3, 64, 64), new THREE.MeshPhongMaterial({ map: defaultMap, shininess: 15 }));
+        // 先上深藍色底漆防止黑球
+        const globeMat = new THREE.MeshPhongMaterial({ color: 0x1b4f72, shininess: 15 });
+        globe = new THREE.Mesh(new THREE.SphereGeometry(3, 64, 64), globeMat);
         scene.add(globe);
 
         const sun = new THREE.DirectionalLight(0xffffff, 1.2); sun.position.set(5, 5, 5); scene.add(sun);
@@ -137,6 +138,16 @@
 
         buildLibrary();
         setupMapSelector();
+
+        // 載入初始底圖
+        new THREE.TextureLoader().load('City_Light_ETOPO.png', t => {
+            globe.material.map = t;
+            globe.material.color.setHex(0xffffff);
+            globe.material.needsUpdate = true;
+        }, undefined, err => {
+            console.error("預設底圖載入失敗，可能正在本機執行或解析度過大", err);
+        });
+
         animate();
     }
 
@@ -145,9 +156,10 @@
             const selectedPath = e.target.value;
             new THREE.TextureLoader().load(selectedPath, t => { 
                 globe.material.map = t; 
+                globe.material.color.setHex(0xffffff);
                 globe.material.needsUpdate = true; 
             }, undefined, err => {
-                console.error("底圖載入失敗，請確認檔案大小寫與路徑：", selectedPath);
+                alert("⚠️ 載入失敗！找不到圖片：" + selectedPath + "\n請確認是否已上傳、路徑或大小寫是否正確。");
             });
         };
     }
@@ -190,32 +202,44 @@
         }
     }
 
+    // 關鍵升級：支援動態無縫降級的衛星物件建立函數
     function createSatObj(sat) {
         const phi = (90 - sat.lat) * (Math.PI / 180), theta = (sat.lon + 180) * (Math.PI / 180);
-        let mesh;
         
+        // 建立一個 3D 群組容器
+        const container = new THREE.Group();
+        
+        // 建立預設的立體 3D 圓點
+        const fallbackMesh = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 16), new THREE.MeshBasicMaterial({ color: sat.color }));
+        container.add(fallbackMesh);
+
+        // 如果資料庫中有指定圖標路徑，嘗試在背景非同步載入
         if (sat.icon) {
-            mesh = new THREE.Sprite(new THREE.SpriteMaterial({ 
-                map: new THREE.TextureLoader().load(sat.icon, undefined, undefined, () => {
-                    mesh.material = new THREE.SpriteMaterial({ color: sat.color });
-                }) 
-            }));
-            mesh.scale.set(0.4, 0.4, 1);
-        } else {
-            mesh = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 16), new THREE.MeshBasicMaterial({ color: sat.color }));
+            new THREE.TextureLoader().load(sat.icon, t => {
+                // 載入成功：把原本的立體圓點拔掉，換成精美的去背圖片 Sprite
+                container.remove(fallbackMesh);
+                const spriteMat = new THREE.SpriteMaterial({ map: t });
+                const sprite = new THREE.Sprite(spriteMat);
+                sprite.scale.set(0.4, 0.4, 1);
+                container.add(sprite);
+            }, undefined, err => {
+                // 載入失敗（圖檔還沒上傳或不完全）：不執行任何動作，維持原本的立體圓點
+                console.log(`圖標 ${sat.icon} 暫無或讀取失敗，此衛星將自動維持圓點顯示。`);
+            });
         }
 
+        // 根據軌道類型決定要把容器掛在旋轉的地球上還是太空場景中
         if (sat.orb === "GEO") {
             const alt = 3.65;
-            mesh.position.set(-alt * Math.sin(phi) * Math.cos(theta), alt * Math.cos(phi), alt * Math.sin(phi) * Math.sin(theta));
-            globe.add(mesh);
+            container.position.set(-alt * Math.sin(phi) * Math.cos(theta), alt * Math.cos(phi), alt * Math.sin(phi) * Math.sin(theta));
+            globe.add(container);
         } else {
-            scene.add(mesh);
+            scene.add(container);
         }
 
         const el = document.createElement('div'); el.className = 'sat-label'; el.innerText = sat.name;
         document.getElementById('viewer').appendChild(el);
-        const pair = { element: el, mesh: mesh, satData: sat, offset: Math.random() * 100 }; 
+        const pair = { element: el, mesh: container, satData: sat, offset: Math.random() * 100 }; 
         labelPairs.push(pair); return pair;
     }
 
@@ -243,7 +267,11 @@
 
     document.getElementById('map-upload').onchange = function(e) {
         const r = new FileReader(); r.onload = ev => {
-            new THREE.TextureLoader().load(ev.target.result, t => { globe.material.map = t; globe.material.needsUpdate = true; });
+            new THREE.TextureLoader().load(ev.target.result, t => { 
+                globe.material.map = t; 
+                globe.material.color.setHex(0xffffff);
+                globe.material.needsUpdate = true; 
+            });
         }; r.readAsDataURL(e.target.files[0]);
     };
 

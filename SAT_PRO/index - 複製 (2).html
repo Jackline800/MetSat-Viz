@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>WMO 全衛星監控系統 - 完整繞極動態版</title>
+    <style>
+        :root { --bg: #0a0c11; --ui: #ffffff; --accent: #3498db; }
+        body { margin: 0; background: var(--bg); color: #333; font-family: sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        
+        #sidebar { 
+            width: 400px; background: #fff; padding: 20px; z-index: 100; 
+            box-shadow: 5px 0 15px rgba(0,0,0,0.6); 
+            display: flex; flex-direction: column;
+            overflow-y: auto; 
+        }
+
+        #viewer { flex: 1; position: relative; background: radial-gradient(circle, #1b2735 0%, #05080c 100%); cursor: grab; }
+        #viewer:active { cursor: grabbing; }
+
+        h2 { font-size: 1.1rem; border-bottom: 2px solid var(--accent); padding-bottom: 8px; margin-top: 0; }
+        .group { margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        label { font-size: 0.8rem; font-weight: bold; display: block; margin: 6px 0 3px; }
+        input, select, button { width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #ddd; box-sizing: border-box; }
+        button { background: var(--accent); color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 5px; }
+        
+        #library { border: 1px solid #eee; border-radius: 5px; padding: 5px; margin-top: 10px; background: #fafafa; }
+        .cat-title { background: #eef2f7; padding: 5px 10px; font-size: 0.75rem; font-weight: bold; margin-top: 10px; border-radius: 3px; color: #2980b9; }
+        .lib-item { display: flex; align-items: center; justify-content: space-between; font-size: 0.72rem; padding: 5px 0; border-bottom: 1px solid #f2f2f2; }
+        .lib-info { display: flex; align-items: center; }
+        .lib-info input { width: auto; margin-right: 8px; }
+        .change-btn { width: auto; font-size: 0.6rem; padding: 2px 6px; background: #95a5a6; margin: 0; }
+
+        .sat-label {
+            position: absolute; background: rgba(0,0,0,0.8); color: white;
+            padding: 2px 6px; border-radius: 4px; font-size: 10px;
+            pointer-events: none; white-space: nowrap; transform: translate(-50%, -140%);
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+    </style>
+</head>
+<body>
+
+<div id="sidebar">
+    <h2>WMO 衛星系統 (全數據匯入)</h2>
+    
+    <div class="group">
+        <label>1. 🌍 全球觀測底圖切換</label>
+        <select id="map-selector" style="margin-bottom: 8px;">
+            <option value="City_Light_ETOPO.png">方案一：城市夜間燈光圖 (預設)</option>
+            <option value="ETOPO1_ELEVATION_OL_small.png">方案二：地形底圖（一）</option>
+            <option value="ETOPO1_GMT_small.png">方案三：地形底圖（二）</option>
+            <option value="ETOPO_CLD.png">方案四：模擬動態雲圖</option>
+        </select>
+        <label style="font-size: 0.75rem; color: #7f8c8d; font-weight: normal;">或手動匯入本地地圖：</label>
+        <input type="file" id="map-upload" accept="image/*">
+    </div>
+
+    <div class="group">
+        <label>2. 地球自轉與縮放 (滾輪控制)</label>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <input type="range" id="speed-ctrl" min="0" max="0.01" step="0.0001" value="0.001">
+            <button id="rot-btn" onclick="toggleRotation()" style="width:80px;">暫停</button>
+        </div>
+    </div>
+
+    <div class="group">
+        <label>3. 衛星庫 (勾選顯示 / 換圖)</label>
+        <div id="library"></div>
+    </div>
+
+    <div class="group">
+        <label>4. 手動新增衛星</label>
+        <div style="display: flex; gap: 3px;">
+            <input type="text" id="cust-name" placeholder="名稱" style="flex:2;">
+            <input type="number" id="cust-lon" placeholder="經" style="flex:1;">
+            <input type="number" id="cust-lat" placeholder="緯" style="flex:1;">
+        </div>
+        <button style="background: #27ae60;" onclick="addCustom()">部署</button>
+    </div>
+    
+    <input type="file" id="hidden-file-input" style="display:none;" accept="image/*">
+</div>
+
+<div id="viewer"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+<script>
+    let scene, camera, renderer, globe, controls, isRotating = true, targetIdx = null;
+    const activeSats = new Map(), labelPairs = [];
+
+    const satDatabase = [
+        // --- GEO Core ---
+        { cat: "GEO 靜止軌道", name: "Himawari-9 (140.7E)", lon: 140.7, lat: 0, orb: "GEO", color: 0xffa502, icon: "衛星/Himawari-9.png" },
+        { cat: "GEO 靜止軌道", name: "GOES-18 (137.2W)", lon: -137.2, lat: 0, orb: "GEO", color: 0x70a1ff },
+        { cat: "GEO 靜止軌道", name: "GOES-16 (75.2W)", lon: -75.2, lat: 0, orb: "GEO", color: 0x70a1ff },
+        { cat: "GEO 靜止軌道", name: "Meteosat-12 (0.3W)", lon: -0.3, lat: 0, orb: "GEO", color: 0x2ed573 },
+        { cat: "GEO 靜止軌道", name: "FY-4B (105E)", lon: 105, lat: 0, orb: "GEO", color: 0xff4757 },
+        { cat: "GEO 靜止軌道", name: "GK-2A (128.2E)", lon: 128.2, lat: 0, orb: "GEO", color: 0x54a0ff },
+        { cat: "GEO 靜止軌道", name: "INSAT-3DR (74E)", lon: 74, lat: 0, orb: "GEO", color: 0xe67e22 },
+
+        // --- LEO SSO (動態繞極) ---
+        { cat: "LEO 繞極軌道", name: "Metop-C (Morning)", lon: 0, lat: 0, orb: "LEO", color: 0x1dd1a1 },
+        { cat: "LEO 繞極軌道", name: "Metop-B (Morning)", lon: 0, lat: 0, orb: "LEO", color: 0x1dd1a1 },
+        { cat: "LEO 繞極軌道", name: "NOAA-21 (Afternoon)", lon: 0, lat: 0, orb: "LEO", color: 0x2ecc71 },
+        { cat: "LEO 繞極軌道", name: "Suomi-NPP", lon: 0, lat: 0, orb: "LEO", color: 0x10ac84 },
+        { cat: "LEO 繞極軌道", name: "FY-3F (Morning)", lon: 0, lat: 0, orb: "LEO", color: 0xee5253 },
+        { cat: "LEO 繞極軌道", name: "FY-3E (Early Morning)", lon: 0, lat: 0, orb: "LEO", color: 0xee5253 },
+
+        // --- Research ---
+        { cat: "特殊/研究軌道", name: "COSMIC-2 (Inclined)", lon: 121.5, lat: 23.5, orb: "LEO", color: 0x5f27cd },
+        { cat: "特殊/研究軌道", name: "GPM-Core (Rain)", lon: -10, lat: 35, orb: "LEO", color: 0x00d2d3 },
+        { cat: "特殊/研究軌道", name: "Sentinel-6", lon: 180, lat: -20, orb: "LEO", color: 0x48dbfb }
+    ];
+
+    function init() {
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(45, (window.innerWidth - 400) / window.innerHeight, 0.1, 1000);
+        camera.position.z = 10;
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth - 400, window.innerHeight);
+        document.getElementById('viewer').appendChild(renderer.domElement);
+
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.minDistance = 4; controls.maxDistance = 25;
+
+        // 修正：預設地球材質直接讀取同層資料夾下的 City_Light_ETOPO.png
+        const textureLoader = new THREE.TextureLoader();
+        const defaultMap = textureLoader.load('City_Light_ETOPO.png');
+        globe = new THREE.Mesh(new THREE.SphereGeometry(3, 64, 64), new THREE.MeshPhongMaterial({ map: defaultMap, shininess: 15 }));
+        scene.add(globe);
+
+        const sun = new THREE.DirectionalLight(0xffffff, 1.2); sun.position.set(5, 5, 5); scene.add(sun);
+        scene.add(new THREE.AmbientLight(0x555555));
+
+        buildLibrary();
+        setupMapSelector();
+        animate();
+    }
+
+    function setupMapSelector() {
+        document.getElementById('map-selector').onchange = function(e) {
+            const selectedPath = e.target.value;
+            new THREE.TextureLoader().load(selectedPath, t => { 
+                globe.material.map = t; 
+                globe.material.needsUpdate = true; 
+            }, undefined, err => {
+                console.error("底圖載入失敗，請確認檔案大小寫與路徑：", selectedPath);
+            });
+        };
+    }
+
+    function buildLibrary() {
+        const lib = document.getElementById('library'); lib.innerHTML = '';
+        let lastCat = "";
+        satDatabase.forEach((sat, i) => {
+            if (sat.cat !== lastCat) {
+                const t = document.createElement('div'); t.className = 'cat-title'; t.innerText = sat.cat;
+                lib.appendChild(t); lastCat = sat.cat;
+            }
+            const item = document.createElement('div'); item.className = 'lib-item';
+            item.innerHTML = `<div class="lib-info"><input type="checkbox" id="chk-${i}" onchange="toggleSat(${i})"><span>${sat.name}</span></div><button class="change-btn" onclick="triggerFile(${i})">換圖</button>`;
+            lib.appendChild(item);
+        });
+    }
+
+    function toggleRotation() { isRotating = !isRotating; document.getElementById('rot-btn').innerText = isRotating ? "暫停" : "開始"; }
+    function triggerFile(idx) { targetIdx = idx; document.getElementById('hidden-file-input').click(); }
+
+    document.getElementById('hidden-file-input').onchange = function(e) {
+        if (e.target.files && e.target.files[0]) {
+            const r = new FileReader(); r.onload = ev => {
+                satDatabase[targetIdx].icon = ev.target.result;
+                if (activeSats.has(targetIdx)) { removeSat(targetIdx); toggleSat(targetIdx); }
+            }; r.readAsDataURL(e.target.files[0]);
+        }
+    };
+
+    function toggleSat(idx) {
+        const sat = satDatabase[idx]; const chk = document.getElementById(`chk-${idx}`);
+        if (chk.checked) { activeSats.set(idx, createSatObj(sat)); } else { removeSat(idx); }
+    }
+
+    function removeSat(idx) {
+        const d = activeSats.get(idx); if (d) { 
+            if (d.satData.orb === "GEO") globe.remove(d.mesh); else scene.remove(d.mesh);
+            d.label.remove(); labelPairs.splice(labelPairs.indexOf(d), 1); activeSats.delete(idx); 
+        }
+    }
+
+    function createSatObj(sat) {
+        const phi = (90 - sat.lat) * (Math.PI / 180), theta = (sat.lon + 180) * (Math.PI / 180);
+        let mesh;
+        
+        if (sat.icon) {
+            mesh = new THREE.Sprite(new THREE.SpriteMaterial({ 
+                map: new THREE.TextureLoader().load(sat.icon, undefined, undefined, () => {
+                    mesh.material = new THREE.SpriteMaterial({ color: sat.color });
+                }) 
+            }));
+            mesh.scale.set(0.4, 0.4, 1);
+        } else {
+            mesh = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 16), new THREE.MeshBasicMaterial({ color: sat.color }));
+        }
+
+        if (sat.orb === "GEO") {
+            const alt = 3.65;
+            mesh.position.set(-alt * Math.sin(phi) * Math.cos(theta), alt * Math.cos(phi), alt * Math.sin(phi) * Math.sin(theta));
+            globe.add(mesh);
+        } else {
+            scene.add(mesh);
+        }
+
+        const el = document.createElement('div'); el.className = 'sat-label'; el.innerText = sat.name;
+        document.getElementById('viewer').appendChild(el);
+        const pair = { element: el, mesh: mesh, satData: sat, offset: Math.random() * 100 }; 
+        labelPairs.push(pair); return pair;
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        const time = Date.now() * 0.001;
+        if (isRotating) globe.rotation.y += parseFloat(document.getElementById('speed-ctrl').value);
+        controls.update();
+
+        labelPairs.forEach(p => {
+            if (p.satData.orb === "LEO") {
+                const speed = 0.4; const radius = 3.25;
+                p.mesh.position.set(0, radius * Math.cos(time * speed + p.offset), radius * Math.sin(time * speed + p.offset));
+            }
+            const worldPos = new THREE.Vector3(); p.mesh.getWorldPosition(worldPos);
+            const cameraDist = camera.position.distanceTo(worldPos), globeDist = camera.position.distanceTo(globe.position);
+            if (cameraDist > globeDist + 0.1) { p.element.style.display = 'none'; } else {
+                p.element.style.display = 'block'; const screenPos = worldPos.project(camera);
+                p.element.style.left = `${(screenPos.x * 0.5 + 0.5) * (window.innerWidth - 400)}px`;
+                p.element.style.top = `${(-(screenPos.y * 0.5 - 0.5)) * window.innerHeight}px`;
+            }
+        });
+        renderer.render(scene, camera);
+    }
+
+    document.getElementById('map-upload').onchange = function(e) {
+        const r = new FileReader(); r.onload = ev => {
+            new THREE.TextureLoader().load(ev.target.result, t => { globe.material.map = t; globe.material.needsUpdate = true; });
+        }; r.readAsDataURL(e.target.files[0]);
+    };
+
+    function addCustom() {
+        const n = document.getElementById('cust-name').value || "Custom";
+        const lo = parseFloat(document.getElementById('cust-lon').value), la = parseFloat(document.getElementById('cust-lat').value);
+        if (!isNaN(lo) && !isNaN(la)) {
+            satDatabase.push({ cat: "手動新增", name: n, lon: lo, lat: la, orb: "LEO", color: 0x27ae60 });
+            buildLibrary(); const idx = satDatabase.length - 1;
+            document.getElementById(`chk-${idx}`).checked = true; toggleSat(idx);
+        }
+    }
+
+    window.addEventListener('resize', () => {
+        camera.aspect = (window.innerWidth - 400) / window.innerHeight; camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth - 400, window.innerHeight);
+    });
+
+    init();
+</script>
+</body>
+</html>
