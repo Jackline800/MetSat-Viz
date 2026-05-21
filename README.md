@@ -1,41 +1,34 @@
-🛰️ 氣象衛星遙測觀測與前瞻進程視覺化專案庫
-本資料庫旨在透過直觀、互動式的網頁介面，呈現全球氣象衛星的分佈現況，以及東亞地區關鍵氣象衛星（日本向日葵系列與韓國千里眼系列）的技術世代演進。
+# 🛰️ MetSat-Viz (Meteorological Satellite Visualization)
 
-🌐 線上作品展示中心 (Live Demos)
-你可以透過以下發佈的 GitHub Pages 連結，直接觀看互動式網頁作品：
+本專案庫旨在透過直觀的互動介面，呈現全球氣象衛星軌道分佈，以及東亞地區關鍵氣象衛星技術之世代演進。
 
-1. 🌍 全球氣象衛星軌道分佈圖 (MetSat-Viz)
-作品連結：點此觀看 MetSat-Viz 網頁
+---
 
-核心特點：
+## 🌐 線上作品展示 (Live Demos)
 
-視覺化呈現分佈在地球上空的地球同步氣象衛星 (Geostationary Satellites)。
+### 1. 全球氣象衛星軌道分佈 (SAT_PRO)
+* **核心功能**：3D 視覺化呈現同步軌道 (GEO) 與繞極軌道 (LEO) 配置。
+* **[點此觀看系統](https://jackline800.github.io/MyPage/SAT_PRO/index.html)**
 
-同步對比低軌道 (LEO) / 繞極軌道氣象衛星 (Polar-orbiting Satellites) 的觀測觀點。
+### 2. 日韓氣象衛星世代演進 (HimaCOMS)
+* **核心功能**：時間軸互動分析，含 Himawari 與 COMS/GK 系列演進。
+* **[點此觀看時間軸](https://jackline800.github.io/MyPage/HimaCOMS/index.html)**
 
-適合快速掌握全球氣象觀測網的空間配置與遙測涵蓋範圍。
+---
 
-2. 📊 日韓氣象衛星世代演進時間軸 (HimaCOMS)
-作品連結：點此觀看 HimaCOMS 網頁
+## 🛠️ 專案架構 (Project Architecture)
 
-核心特點：
+* **SAT_PRO/**
+    * `index.html`：衛星分佈主程式
+    * `SAT/`：衛星圖像資料庫
+* **HimaCOMS/**
+    * `index.html`：演進時間軸主程式
+    * `SAT/`：各世代酬載技術資料
 
-聚焦東亞觀測核心，彙整日本向日葵系列 (Himawari/GMS) 與韓國千里眼系列 (Geo-Kompsat/COMS) 的發展歷史。
+---
 
-完美呈現兩大航太機構在觀測酬載（如掃描輻射計通道、空間解析度、全圓盤掃描觀測時效）的技術推進與時序拉鋸。
+## 💡 聲明與交流
+本專案依據世界氣象組織 (WMO) 規範彙整衛星遙測資料。
 
-📁 儲存庫架構說明 (Repository Structure)
-SAT_PRO/ —— 全球同步與繞極衛星分佈網頁專案資料夾
-
-index.html —— 衛星分佈主網頁
-
-SAT/ —— 相關衛星去背圖檔與底圖
-
-HimaCOMS/ —— 日韓氣象衛星進程時間軸專案資料夾
-
-index.html —— 時間軸主網頁
-
-SAT/ —— 向日葵與千里眼系列各世代衛星酬載圖檔
-
-💡 研究合作與交流
-本專案之資料與衛星規格皆依據世界氣象組織 (WMO)、日本氣象廳 (JMA) 及韓國氣象廳 (KMA) 官方發佈之航太酬載參數進行整理，主要用於衛星遙測技術交流與學術視覺化研究。
+* **維護者**：葉子嫈
+* **專長領域**：衛星遙測、大氣科學與數值分析
