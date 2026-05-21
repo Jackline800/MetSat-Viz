@@ -1,34 +1,36 @@
-# 🛰️ MetSat-Viz (Meteorological Satellite Visualization)
+<div style="font-family: sans-serif;">
 
-本專案庫旨在透過直觀的互動介面，呈現全球氣象衛星軌道分佈，以及東亞地區關鍵氣象衛星技術之世代演進。
+# <span style="font-size: 32px;">🛰️ MetSat-Viz (氣象衛星遙測視覺化)</span>
 
----
-
-## 🌐 線上作品展示 (Live Demos)
-
-### 1. 全球氣象衛星軌道分佈 (SAT_PRO)
-* **核心功能**：3D 視覺化呈現同步軌道 (GEO) 與繞極軌道 (LEO) 配置。
-* **[點此觀看系統](https://jackline800.github.io/MetSat-Viz/SAT_PRO/index.html)**
-
-### 2. 日韓氣象衛星世代演進 (HimaCOMS)
-* **核心功能**：時間軸互動分析，含 Himawari 與 COMS/GK 系列演進。
-* **[點此觀看時間軸](https://jackline800.github.io/MetSat-Viz/HimaCOMS/index.html)**
+<span style="font-size: 18px; color: #555;">本專案庫旨在透過直觀、互動式的網頁介面，呈現全球氣象衛星的分佈現況與技術演進。</span>
 
 ---
 
-## 🛠️ 專案架構 (Project Architecture)
+## 🌐 <span style="font-size: 24px;">線上作品展示</span>
 
-* **SAT_PRO/**
-    * `index.html`：衛星分佈主程式
-    * `SAT/`：衛星圖像資料庫
-* **HimaCOMS/**
-    * `index.html`：演進時間軸主程式
-    * `SAT/`：各世代酬載技術資料
+<div style="margin-left: 20px;">
+
+### 1. 🌍 全球氣象衛星軌道分佈圖 (SAT_PRO)
+<span style="font-size: 16px;">視覺化呈現同步軌道 (GEO) 與繞極軌道 (LEO) 配置。</span>
+<a href="https://jackline800.github.io/MetSat-Viz/SAT_PRO/index.html" target="_blank" rel="noopener noreferrer" style="font-size: 16px; font-weight: bold;">點此觀看系統 (另開分頁)</a>
+
+### 2. 📊 日韓氣象衛星世代演進 (HimaCOMS)
+<span style="font-size: 16px;">時間軸互動分析，含 Himawari 與 COMS/GK 系列演進。</span>
+<a href="https://jackline800.github.io/MetSat-Viz/HimaCOMS/index.html" target="_blank" rel="noopener noreferrer" style="font-size: 16px; font-weight: bold;">點此觀看時間軸 (另開分頁)</a>
+
+</div>
 
 ---
 
-## 💡 聲明與交流
-本專案依據世界氣象組織 (WMO) 規範彙整衛星遙測資料。
+## 🛠️ <span style="font-size: 24px;">專案架構說明</span>
 
-* **維護者**：葉子嫈
-* **專長領域**：衛星遙測、大氣科學與數值分析
+<ul style="font-size: 16px;">
+  <li><strong>SAT_PRO/</strong>：衛星軌道分佈主程式與衛星影像資料庫。</li>
+  <li><strong>HimaCOMS/</strong>：世代演進時間軸主程式與各系列酬載技術參數。</li>
+</ul>
+
+<br>
+
+<span style="font-size: 14px; color: #888;">維護者：葉子嫈 | 專長：衛星遙測、大氣科學與數值分析</span>
+
+</div>
