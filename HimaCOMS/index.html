@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>日韓氣象衛星演進時間軸 (拖曳與縮放升級版)</title>
+    <title>日韓氣象衛星演進時間軸 (年份連動與字體縮放升級版)</title>
     <style>
         body { 
             font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; 
@@ -10,10 +10,10 @@
             color: #fff; 
             padding: 40px 20px; 
             margin: 0; 
-            overflow-x: hidden; /* 防止拖曳超出邊界產生多餘卷軸 */
-            user-select: none; /* 全局防反白，提升拖曳體驗 */
+            overflow-x: hidden; 
+            user-select: none; /* 防止拖曳時不小心反白文字 */
         }
-        /*METEOROLOGICAL SATELLITE ROADMAP*/
+        
         .header { text-align: center; margin-bottom: 50px; }
         .header h1 { font-size: 28px; color: #38bdf8; margin: 0 0 10px 0; font-weight: bold; }
 
@@ -54,10 +54,19 @@
         .faction-label.jp { top: 38%; transform: translateY(-100%); color: #fbbf24; border-left: 4px solid #fbbf24; }
         .faction-label.kr { top: 62%; color: #38bdf8; border-left: 4px solid #38bdf8; }
 
-        /* 中央年份標籤 */
+        /* ★ 核心升級：將年份與節點綁定為一個絕對定位的群組 ★ */
+        .timeline-group {
+            position: absolute;
+            top: 50%;
+            width: 0; 
+            height: 0;
+            z-index: 5;
+        }
+
+        /* 中央年份標籤 (現在是相對於 timeline-group 置中) */
         .year-dot { 
             position: absolute; 
-            top: 50%; 
+            top: 0; left: 0;
             transform: translate(-50%, -50%); 
             background: #1e293b; 
             border: 3px solid #fff; 
@@ -67,9 +76,11 @@
             font-weight: bold; 
             z-index: 10; 
             box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            cursor: ew-resize; /* 提示可左右拖曳 */
+            transition: transform 0.2s;
         }
+        .year-dot:active { transform: translate(-50%, -50%) scale(1.1); }
 
-        /* 節點容器改為絕對對齊圓圈，避免卡片放大影響排版 */
         .node { 
             position: absolute; 
             width: 120px; 
@@ -77,73 +88,73 @@
             flex-direction: column; 
             align-items: center; 
             transform: translateX(-50%); 
-            z-index: 5; 
         }
-        .top-node { bottom: 50%; }
-        .bottom-node { top: 50%; }
+        .top-node { bottom: 0; }
+        .bottom-node { top: 0; }
 
         .connector { width: 3px; height: 35px; pointer-events: none; }
         .top-node .connector { background: #fbbf24; }
         .bottom-node .connector { background: #38bdf8; }
 
-        /* 衛星圓形 (僅限水平拖曳) */
+        /* 衛星圓形 */
         .circle { 
             width: 120px; height: 120px; border-radius: 50%; border: 4px solid #fff; 
             background: #0f172a; display: flex; align-items: center; justify-content: center; 
             overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; 
-            cursor: ew-resize; /* 提示使用者只能左右拖曳 */
+            cursor: ew-resize; /* 提示可左右拖曳 */
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
         .circle img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
         .circle:hover { transform: scale(1.05); }
         .circle:active { transform: scale(1.1); box-shadow: 0 8px 20px rgba(0,0,0,0.8); }
+        
         .top-node .circle { border-color: #fbbf24; margin-bottom: 8px; }
         .bottom-node .circle { border-color: #38bdf8; margin-top: 8px; }
 
-       /* ★ 升級版的獨立資訊卡片 (支援縮放與 2D 拖曳) ★ */
+        /* ★ 資訊卡片 (預設縮小字體與寬度) ★ */
         .card { 
             position: absolute;
             box-sizing: border-box;
             background: rgba(30, 41, 59, 0.85); 
             padding: 10px 15px; 
             border-radius: 8px; 
-            width: 260px; /* 固定初始寬度 */
+            width: 200px; /* 寬度從 260px 縮小至 200px */
             left: 50%;
-            margin-left: -130px; /* 完美置中對齊節點 */
+            margin-left: -100px; /* 置中修正 (寬度的一半) */
             border: 1px solid #334155; 
             text-align: left; 
             
-            cursor: grab; /* 提示可任意拖曳 */
-            resize: both; /* 允許右下角隨意縮放 */
-            overflow: hidden; /* 配合 resize 的必要屬性 */
+            cursor: grab; 
+            resize: both; 
+            overflow: hidden; 
             z-index: 10;
             
-            min-width: 150px;
+            min-width: 130px;
             min-height: 80px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.6);
         }
         .card:active { cursor: grabbing; }
 
-        /* 使用 absolute 脫離排版，縮放時不會擠壓到衛星 */
         .top-node .card { bottom: 100%; margin-bottom: 25px; border-top: 4px solid #fbbf24; }
         .bottom-node .card { top: 100%; margin-top: 25px; border-bottom: 4px solid #38bdf8; }
 
+        /* 預設字體縮小 */
         .card h4 { 
             margin: 0 0 5px 0; 
-            font-size: 30px; /* 初始字體，會被 JS 動態覆蓋 */
+            font-size: 18px; /* 從 30px 改為 18px */
             border-bottom: 1px solid #475569; 
             padding-bottom: 3px; 
-            pointer-events: none; /* 點擊穿透，防止干擾拖曳 */
+            pointer-events: none; 
         }
         .card p { 
             margin: 0; 
             color: #cbd5e1; 
-            font-size: 26px; /* 初始字體，會被 JS 動態覆蓋 */
+            font-size: 14px; /* 從 26px 改為 14px */
             line-height: 1.4; 
             pointer-events: none; 
         }
 
-        /* 時間初始位置 */
+        /* 群組的初始位置 (套用在 timeline-group 上) */
         .p1977 { left: 12%; }  
         .p1995 { left: 30%; }
         .p2005 { left: 47%; }
@@ -163,191 +174,188 @@
     <div class="timeline-container">
         <div class="faction-label jp">日本<br>Himawari</div>
         <div class="faction-label kr">韓國<br>COMS/GK</div>
-
         <div class="main-line"></div>
         
-        <div class="year-dot p1977">1977</div>
-        <div class="year-dot p1995">1995</div>
-        <div class="year-dot p2005">2005</div>
-        <div class="year-dot p2010">2010</div>
-        <div class="year-dot p2014">2014</div>
-        <div class="year-dot p2018">2018</div>
-        <div class="year-dot p2028">2028</div>
-        <div class="year-dot p2031">2031</div>
-
-        <div class="node top-node p1977">
-            <div class="card"><h4>GMS 1-4</h4><p>■ <b>自旋穩定體制</b><br>■ 日本首代靜止衛星<br>■ 搭載 VISSR 感測器</p></div>
-            <div class="circle"><img src="SAT/GMS1.png" alt="GMS1"></div>
-            <div class="connector"></div>
+        <div class="timeline-group p1977">
+            <div class="year-dot">1977</div>
+            <div class="node top-node">
+                <div class="card"><h4>GMS 1-4</h4><p>■ <b>自旋穩定體制</b><br>■ 日本首代靜止衛星<br>■ 搭載 VISSR 感測器</p></div>
+                <div class="circle"><img src="SAT/GMS1.png" alt="GMS1"></div>
+                <div class="connector"></div>
+            </div>
         </div>
 
-        <div class="node top-node p1995">
-            <div class="card"><h4>GMS 5</h4><p>■ 新增水氣觀測頻道<br>■ 自旋體制技術終點</p></div>
-            <div class="circle"><img src="SAT/GMS5.png" alt="GMS5"></div>
-            <div class="connector"></div>
+        <div class="timeline-group p1995">
+            <div class="year-dot">1995</div>
+            <div class="node top-node">
+                <div class="card"><h4>GMS 5</h4><p>■ 新增水氣觀測頻道<br>■ 自旋體制技術終點</p></div>
+                <div class="circle"><img src="SAT/GMS5.png" alt="GMS5"></div>
+                <div class="connector"></div>
+            </div>
         </div>
 
-        <div class="node top-node p2005">
-            <div class="card"><h4>MTSAT 1-2</h4><p>■ <b>轉換為三軸穩定</b><br>■ 強化夜間低雲觀測<br>■ 兼具氣象與航管</p></div>
-            <div class="circle"><img src="SAT/MTSAT.png" alt="MTSAT"></div>
-            <div class="connector"></div>
+        <div class="timeline-group p2005">
+            <div class="year-dot">2005</div>
+            <div class="node top-node">
+                <div class="card"><h4>MTSAT 1-2</h4><p>■ <b>轉換為三軸穩定</b><br>■ 強化夜間低雲觀測<br>■ 兼具氣象與航管</p></div>
+                <div class="circle"><img src="SAT/MTSAT.png" alt="MTSAT"></div>
+                <div class="connector"></div>
+            </div>
         </div>
 
-        <div class="node top-node p2014">
-            <div class="card"><h4>Himawari 8, 9</h4><p>■ <b>AHI 進階成像儀</b><br>■ 16 個觀測波段<br>■ 10分鐘全圓盤掃描</p></div>
-            <div class="circle"><img src="SAT/H89.png" alt="H89"></div>
-            <div class="connector"></div>
+        <div class="timeline-group p2014">
+            <div class="year-dot">2014</div>
+            <div class="node top-node">
+                <div class="card"><h4>Himawari 8, 9</h4><p>■ <b>AHI 進階成像儀</b><br>■ 16 個觀測波段<br>■ 10分鐘全圓盤掃描</p></div>
+                <div class="circle"><img src="SAT/H89.png" alt="H89"></div>
+                <div class="connector"></div>
+            </div>
         </div>
 
-        <div class="node top-node p2028">
-            <div class="card"><h4>Himawari 10</h4><p>■ <b>高光譜紅外探測儀</b><br>■ 3D 垂直剖面觀測</p></div>
-            <div class="circle"><img src="SAT/H10.png" alt="H10"></div>
-            <div class="connector"></div>
+        <div class="timeline-group p2028">
+            <div class="year-dot">2028</div>
+            <div class="node top-node">
+                <div class="card"><h4>Himawari 10</h4><p>■ <b>高光譜紅外探測儀</b><br>■ 3D 垂直剖面觀測</p></div>
+                <div class="circle"><img src="SAT/H10.png" alt="H10"></div>
+                <div class="connector"></div>
+            </div>
         </div>
 
-        <div class="node bottom-node p2010">
-            <div class="connector"></div>
-            <div class="circle"><img src="SAT/COMS1.png" alt="COMS1"></div>
-            <div class="card"><h4>COMS-1</h4><p>■ 韓國首顆靜止軌道星<br>■ 複合氣象/海洋觀測</p></div>
+        <div class="timeline-group p2010">
+            <div class="year-dot">2010</div>
+            <div class="node bottom-node">
+                <div class="connector"></div>
+                <div class="circle"><img src="SAT/COMS1.png" alt="COMS1"></div>
+                <div class="card"><h4>COMS-1</h4><p>■ 韓國首顆靜止軌道星<br>■ 複合氣象/海洋觀測</p></div>
+            </div>
         </div>
 
-        <div class="node bottom-node p2018">
-            <div class="connector"></div>
-            <div class="circle"><img src="SAT/GK2.png" alt="GK2"></div>
-            <div class="card"><h4>GK-2A / 2B</h4><p>■ AMI 成像儀 (16波段)<br>■ GEMS 大氣環境監測</p></div>
+        <div class="timeline-group p2018">
+            <div class="year-dot">2018</div>
+            <div class="node bottom-node">
+                <div class="connector"></div>
+                <div class="circle"><img src="SAT/GK2.png" alt="GK2"></div>
+                <div class="card"><h4>GK-2A / 2B</h4><p>■ AMI 成像儀 (16波段)<br>■ GEMS 大氣環境監測</p></div>
+            </div>
         </div>
 
-        <div class="node bottom-node p2031">
-            <div class="connector"></div>
-            <div class="circle"><img src="SAT/GK5.png" alt="GK5"></div>
-            <div class="card"><h4>GEO-KOMPSAT-5</h4><p>■ 18 通道成像技術<br>■ 強化極端天氣追蹤</p></div>
+        <div class="timeline-group p2031">
+            <div class="year-dot">2031</div>
+            <div class="node bottom-node">
+                <div class="connector"></div>
+                <div class="circle"><img src="SAT/GK5.png" alt="GK5"></div>
+                <div class="card"><h4>GEO-KOMPSAT-5</h4><p>■ 18 通道成像技術<br>■ 強化極端天氣追蹤</p></div>
+            </div>
         </div>
-
     </div>
 
     <script>
         // ==========================================
-        // 1. 動態字體縮放邏輯 (ResizeObserver)
+        // 1. 動態字體縮放邏輯
         // ==========================================
-        const BASE_CARD_WIDTH = 260; // 對應 CSS 的預設初始寬度
+        const BASE_CARD_WIDTH = 200; // 對應 CSS 新設定的初始卡片寬度
         const resizeObserver = new ResizeObserver(entries => {
             for (let entry of entries) {
                 const card = entry.target;
                 const currentWidth = card.offsetWidth; 
                 const scale = currentWidth / BASE_CARD_WIDTH;
                 
-                // 限制字體縮放比例 (防呆機制，避免字體過大或過小)
-                const clampedScale = Math.max(0.6, Math.min(scale, 2.5)); 
+                // 限制字體縮放倍率，防止變形
+                const clampedScale = Math.max(0.6, Math.min(scale, 3.0)); 
                 
                 const h4 = card.querySelector('h4');
                 const p = card.querySelector('p');
-                if(h4) h4.style.fontSize = `${30 * clampedScale}px`;
-                if(p) p.style.fontSize = `${26 * clampedScale}px`;
+                // 根據新基準字體 (18px, 14px) 進行放大縮小
+                if(h4) h4.style.fontSize = `${18 * clampedScale}px`;
+                if(p) p.style.fontSize = `${14 * clampedScale}px`;
             }
         });
 
         // ==========================================
-        // 2. 衛星時間軸拖曳 & 卡片空間拖曳邏輯
+        // 2. 統一的拖曳引擎 (效能優化)
         // ==========================================
-        const nodes = document.querySelectorAll('.node');
-        const container = document.querySelector('.timeline-container');
+        let activeTimelineGroup = null;
+        let initialGroupLeft = 0;
+        let startMouseX = 0;
 
-        nodes.forEach(node => {
-            const circle = node.querySelector('.circle');
-            const card = node.querySelector('.card');
+        let activeCard = null;
+        let startCardMouseX = 0, startCardMouseY = 0;
+
+        // 記錄每一張卡片獨立的 XYZ 位移量
+        const cardTransforms = new WeakMap();
+
+        document.querySelectorAll('.timeline-group').forEach(group => {
+            const circle = group.querySelector('.circle');
+            const yearDot = group.querySelector('.year-dot');
+            const card = group.querySelector('.card');
             
-            // 綁定卡片的縮放監聽器
-            if (card) resizeObserver.observe(card);
-
-            // --- 狀態變數 ---
-            // 衛星拖曳狀態
-            let isDraggingNode = false;
-            let startNodeMouseX = 0, initialNodeLeftPx = 0;
-            
-            // 卡片拖曳狀態
-            let isDraggingCard = false;
-            let startCardMouseX = 0, startCardMouseY = 0;
-            let currentCardTranslateX = 0, currentCardTranslateY = 0;
-
-            // ------------------------------------------
-            // 2A. 衛星圓圈滑鼠按下 (水平鎖定拖曳)
-            // ------------------------------------------
-            circle.addEventListener('mousedown', (e) => {
-                isDraggingNode = true;
-                
-                // 視覺置頂：讓拖曳中的整組衛星處於最上層
-                nodes.forEach(n => n.style.zIndex = 5);
-                node.style.zIndex = 20;
-
-                // 取得點擊瞬間的實際絕對左側位置 (轉為 px 以利拖曳運算)
-                const style = window.getComputedStyle(node);
-                initialNodeLeftPx = parseFloat(style.left);
-                startNodeMouseX = e.clientX;
-                
-                e.stopPropagation(); // 停止事件冒泡
-            });
-
-            // ------------------------------------------
-            // 2B. 文字卡片滑鼠按下 (自由 2D 拖曳)
-            // ------------------------------------------
+            // 綁定卡片縮放與拖曳
             if (card) {
+                resizeObserver.observe(card);
+                cardTransforms.set(card, { x: 0, y: 0 });
+
                 card.addEventListener('mousedown', (e) => {
                     const rect = card.getBoundingClientRect();
-                    // 【關鍵防呆】檢測是否點擊在右下角的「縮放控制區 (約 25x25 px)」
-                    // 如果是點擊縮放區，則把控制權交還給瀏覽器原生 Resize，不觸發拖曳
-                    const isClickingResizeHandle = (e.clientX > rect.right - 25) && (e.clientY > rect.bottom - 25);
-                    if (isClickingResizeHandle) return;
-
-                    isDraggingCard = true;
+                    // 防呆：如果是點擊右下角「縮放控制區 (約 25x25 px)」，交還給瀏覽器原生縮放，不觸發拖曳
+                    if ((e.clientX > rect.right - 25) && (e.clientY > rect.bottom - 25)) return; 
                     
-                    // 視覺置頂：讓拖曳中的卡片高於其他所有卡片
+                    activeCard = card;
                     document.querySelectorAll('.card').forEach(c => c.style.zIndex = 10);
                     card.style.zIndex = 100;
-
-                    // 記錄起始位置 (需扣除已存在的 Translate 偏移量)
-                    startCardMouseX = e.clientX - currentCardTranslateX;
-                    startCardMouseY = e.clientY - currentCardTranslateY;
                     
-                    e.stopPropagation();
+                    const transforms = cardTransforms.get(card);
+                    startCardMouseX = e.clientX - transforms.x;
+                    startCardMouseY = e.clientY - transforms.y;
+                    
+                    e.stopPropagation(); // 阻止觸發底層的滑動事件
                 });
             }
 
-            // ------------------------------------------
-            // 全局滑鼠移動事件 (處理真正的拖曳位移)
-            // ------------------------------------------
-            window.addEventListener('mousemove', (e) => {
-                // 處理衛星沿著時間軸滑動
-                if (isDraggingNode) {
-                    const deltaX = e.clientX - startNodeMouseX;
-                    let newLeft = initialNodeLeftPx + deltaX;
-                    
-                    // 防止衛星被拖出左右邊界
-                    newLeft = Math.max(0, Math.min(newLeft, container.clientWidth));
-                    
-                    // 寫入新的 left (px 單位覆蓋掉原本 CSS 的百分比)
-                    node.style.left = `${newLeft}px`;
-                }
-
-                // 處理卡片的自由移動
-                if (isDraggingCard && card) {
-                    currentCardTranslateX = e.clientX - startCardMouseX;
-                    currentCardTranslateY = e.clientY - startCardMouseY;
-                    
-                    // 使用 transform: translate() 不會影響周遭元素的排版
-                    card.style.transform = `translate(${currentCardTranslateX}px, ${currentCardTranslateY}px)`;
-                }
-            });
-
-            // ------------------------------------------
-            // 全局滑鼠放開事件 (停止拖曳)
-            // ------------------------------------------
-            const stopDragging = () => {
-                isDraggingNode = false;
-                isDraggingCard = false;
+            // 綁定時間軸滑動 (點擊衛星或年份皆可觸發)
+            const startTimelineDrag = (e) => {
+                activeTimelineGroup = group;
+                document.querySelectorAll('.timeline-group').forEach(g => g.style.zIndex = 5);
+                group.style.zIndex = 20;
+                
+                // 取得點擊瞬間的絕對水平位置 (轉成 px 方便計算)
+                initialGroupLeft = parseFloat(window.getComputedStyle(group).left);
+                startMouseX = e.clientX;
+                e.stopPropagation();
             };
-            window.addEventListener('mouseup', stopDragging);
-            window.addEventListener('mouseleave', stopDragging); // 滑鼠離開視窗也停止
+
+            if (circle) circle.addEventListener('mousedown', startTimelineDrag);
+            if (yearDot) yearDot.addEventListener('mousedown', startTimelineDrag);
         });
+
+        // 全域游標移動事件
+        window.addEventListener('mousemove', (e) => {
+            // 1. 處理整個群組(衛星+年份)在時間軸上滑動
+            if (activeTimelineGroup) {
+                const deltaX = e.clientX - startMouseX;
+                let newLeft = initialGroupLeft + deltaX;
+                const container = document.querySelector('.timeline-container');
+                
+                // 邊界防護
+                newLeft = Math.max(0, Math.min(newLeft, container.clientWidth));
+                activeTimelineGroup.style.left = `${newLeft}px`;
+            }
+
+            // 2. 處理獨立資訊卡片的 2D 拖曳
+            if (activeCard) {
+                const transforms = cardTransforms.get(activeCard);
+                transforms.x = e.clientX - startCardMouseX;
+                transforms.y = e.clientY - startCardMouseY;
+                activeCard.style.transform = `translate(${transforms.x}px, ${transforms.y}px)`;
+            }
+        });
+
+        // 放開滑鼠時解除所有拖曳狀態
+        const stopDrag = () => {
+            activeTimelineGroup = null;
+            activeCard = null;
+        };
+        window.addEventListener('mouseup', stopDrag);
+        window.addEventListener('mouseleave', stopDrag);
     </script>
 </body>
 </html>
