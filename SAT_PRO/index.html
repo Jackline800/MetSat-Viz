@@ -111,12 +111,12 @@
     let geoRadius = 3.65, leoRadius = 3.25; 
     const activeSats = new Map(), labelPairs = [];
 
-    // 【載入完整 Excel 數據】：已結合您的 GEO 完整列表與 LEO 分類
+    // 【載入完整數據】：包含您更新圖示的GEO 以及全新匯入的繞極衛星群
     const satDatabase = [
-        // --- GEO Core 地球同步衛星 (依地區機構與經度時序排列) ---
+        // --- GEO Core 地球同步衛星 ---
         { cat: "GEO 靜止軌道", name: "Himawari-9 (140.7E)", lon: 140.7, lat: 0, orb: "GEO", color: 0xffa502, icon: "衛星/地球同步/H89.png" },
         { cat: "GEO 靜止軌道", name: "Himawari-8 (140.7E)", lon: 140.7, lat: 0, orb: "GEO", color: 0xff7f50, icon: "衛星/地球同步/H89.png" },
-        { cat: "GEO 靜止軌道", name: "Himawari-10 (140.7E)", lon: 140.7, lat: 0, orb: "GEO", color: 0xeccc68,icon: "衛星/地球同步/H10.png" },
+        { cat: "GEO 靜止軌道", name: "Himawari-10 (140.7E)", lon: 140.7, lat: 0, orb: "GEO", color: 0xeccc68, icon: "衛星/地球同步/H10.png" },
         
         { cat: "GEO 靜止軌道", name: "GEO-KOMPSAT-2A (128.2E)", lon: 128.2, lat: 0, orb: "GEO", color: 0x54a0ff , icon: "衛星/地球同步/GK2.png" },
         { cat: "GEO 靜止軌道", name: "GEO-KOMPSAT-2B (128.2E)", lon: 128.2, lat: 0, orb: "GEO", color: 0x2ed573 , icon: "衛星/地球同步/GK2.png"},
@@ -144,15 +144,45 @@
         
         { cat: "GEO 靜止軌道", name: "INSAT-3DR (74.0E)", lon: 74.0, lat: 0, orb: "GEO", color: 0xe67e22 },
 
-        // --- LEO (氣象為主) ---
-        { cat: "低軌/繞極 (氣象為主)", name: "Metop-C (Morning)", lon: 0, lat: 0, orb: "LEO", color: 0x1dd1a1 },
-        { cat: "低軌/繞極 (氣象為主)", name: "Metop-B (Morning)", lon: 30, lat: 0, orb: "LEO", color: 0x1dd1a1 },
-        { cat: "低軌/繞極 (氣象為主)", name: "NOAA-21 (Afternoon)", lon: 60, lat: 0, orb: "LEO", color: 0x2ecc71 },
-        { cat: "低軌/繞極 (氣象為主)", name: "Suomi-NPP", lon: 90, lat: 0, orb: "LEO", color: 0x10ac84 },
-        { cat: "低軌/繞極 (氣象為主)", name: "FY-3F (Morning)", lon: 120, lat: 0, orb: "LEO", color: 0xee5253 },
-        { cat: "低軌/繞極 (氣象為主)", name: "FY-3E (Early Morning)", lon: 150, lat: 0, orb: "LEO", color: 0xee5253 },
+        // --- LEO 繞極軌道 (氣象為主) --- (美國)
+        { cat: "低軌/繞極 (氣象為主)", name: "SNPP (Afternoon)", lon: 0, lat: 0, orb: "LEO", color: 0x10ac84 },
+        { cat: "低軌/繞極 (氣象為主)", name: "NOAA-20 (Afternoon)", lon: 20, lat: 0, orb: "LEO", color: 0x2ecc71 },
+        { cat: "低軌/繞極 (氣象為主)", name: "NOAA-21 (Afternoon)", lon: 40, lat: 0, orb: "LEO", color: 0x2ecc71 },
+        { cat: "低軌/繞極 (氣象為主)", name: "JPSS-3 (Afternoon)", lon: 60, lat: 0, orb: "LEO", color: 0x2ecc71 },
+        { cat: "低軌/繞極 (氣象為主)", name: "DMSP-F17 (Early Morning)", lon: 80, lat: 0, orb: "LEO", color: 0x34495e },
+        { cat: "低軌/繞極 (氣象為主)", name: "DMSP-F18 (Early Morning)", lon: 100, lat: 0, orb: "LEO", color: 0x34495e },
+        { cat: "低軌/繞極 (氣象為主)", name: "WSF-M1 (Early Morning)", lon: 120, lat: 0, orb: "LEO", color: 0x7f8c8d },
+        { cat: "低軌/繞極 (氣象為主)", name: "WSF-M2 (Afternoon)", lon: 140, lat: 0, orb: "LEO", color: 0x7f8c8d },
+        // --- (歐洲)
+        { cat: "低軌/繞極 (氣象為主)", name: "Metop-B (Morning)", lon: 160, lat: 0, orb: "LEO", color: 0x1dd1a1 },
+        { cat: "低軌/繞極 (氣象為主)", name: "Metop-C (Morning)", lon: 180, lat: 0, orb: "LEO", color: 0x1dd1a1 },
+        { cat: "低軌/繞極 (氣象為主)", name: "Metop-SG-A1 (Morning)", lon: 200, lat: 0, orb: "LEO", color: 0x0abde3 },
+        { cat: "低軌/繞極 (氣象為主)", name: "Metop-SG-A2 (Morning)", lon: 220, lat: 0, orb: "LEO", color: 0x0abde3 },
+        { cat: "低軌/繞極 (氣象為主)", name: "Metop-SG-A3 (Morning)", lon: 240, lat: 0, orb: "LEO", color: 0x0abde3 },
+        { cat: "低軌/繞極 (氣象為主)", name: "Metop-SG-B2 (Morning)", lon: 260, lat: 0, orb: "LEO", color: 0x48dbfb },
+        { cat: "低軌/繞極 (氣象為主)", name: "Metop-SG-B3 (Morning)", lon: 280, lat: 0, orb: "LEO", color: 0x48dbfb },
+        { cat: "低軌/繞極 (氣象為主)", name: "EPS-Sterna-1 (Afternoon)", lon: 300, lat: 0, orb: "LEO", color: 0x00d2d3 },
+        { cat: "低軌/繞極 (氣象為主)", name: "EPS-Sterna-2 (Early Morning)", lon: 320, lat: 0, orb: "LEO", color: 0x00d2d3 },
+        { cat: "低軌/繞極 (氣象為主)", name: "EPS-Sterna-3 (Morning)", lon: 340, lat: 0, orb: "LEO", color: 0x00d2d3 },
+        { cat: "低軌/繞極 (氣象為主)", name: "AWS PFM (Morning)", lon: 10, lat: 0, orb: "LEO", color: 0x54a0ff },
+        // --- (中國)
+        { cat: "低軌/繞極 (氣象為主)", name: "FY-3E (Early Morning)", lon: 30, lat: 0, orb: "LEO", color: 0xff4757 },
+        { cat: "低軌/繞極 (氣象為主)", name: "FY-3F (Morning)", lon: 50, lat: 0, orb: "LEO", color: 0xff4757 },
+        { cat: "低軌/繞極 (氣象為主)", name: "FY-3D (Afternoon)", lon: 70, lat: 0, orb: "LEO", color: 0xff4757 },
+        { cat: "低軌/繞極 (氣象為主)", name: "FY-3H (Afternoon)", lon: 90, lat: 0, orb: "LEO", color: 0xff6b81 },
+        // --- (俄羅斯)
+        { cat: "低軌/繞極 (氣象為主)", name: "Meteor-M N2-4 (Morning)", lon: 110, lat: 0, orb: "LEO", color: 0x9b59b6 },
+        { cat: "低軌/繞極 (氣象為主)", name: "Meteor-M N2-3 (Afternoon)", lon: 130, lat: 0, orb: "LEO", color: 0x9b59b6 },
+        { cat: "低軌/繞極 (氣象為主)", name: "Meteor-M N2-6 (Morning)", lon: 150, lat: 0, orb: "LEO", color: 0x9b59b6 },
+        { cat: "低軌/繞極 (氣象為主)", name: "Meteor-MP N2 (Morning)", lon: 170, lat: 0, orb: "LEO", color: 0x8e44ad },
+        { cat: "低軌/繞極 (氣象為主)", name: "Meteor-M N2-7 (Afternoon)", lon: 190, lat: 0, orb: "LEO", color: 0x9b59b6 },
+        { cat: "低軌/繞極 (氣象為主)", name: "Meteor-M N2-8 (Afternoon)", lon: 210, lat: 0, orb: "LEO", color: 0x9b59b6 },
 
-        // --- LEO (環境為主) ---
+        // --- LEO 繞極軌道 (環境為主) ---
+        { cat: "低軌/繞極 (環境為主)", name: "Harmony-1 (SAR Formation)", lon: 230, lat: 0, orb: "LEO", color: 0x5f27cd },
+        { cat: "低軌/繞極 (環境為主)", name: "Harmony-2 (SAR Formation)", lon: 235, lat: 0, orb: "LEO", color: 0x5f27cd }, // 故意將交角設為極近，模擬編隊飛行
+        { cat: "低軌/繞極 (環境為主)", name: "SWING (Space Weather)", lon: 250, lat: 0, orb: "LEO", color: 0xf368e0 },
+        { cat: "低軌/繞極 (環境為主)", name: "AOS-HAWCSat (Aerosol)", lon: 270, lat: 0, orb: "LEO", color: 0xff9f43 },
         { cat: "低軌/繞極 (環境為主)", name: "COSMIC-2 (Inclined)", lon: 200, lat: 23.5, orb: "LEO", color: 0x5f27cd },
         { cat: "低軌/繞極 (環境為主)", name: "GPM-Core (Rain)", lon: 250, lat: 35, orb: "LEO", color: 0x00d2d3 },
         { cat: "低軌/繞極 (環境為主)", name: "Sentinel-6", lon: 300, lat: -20, orb: "LEO", color: 0x48dbfb }
@@ -181,7 +211,6 @@
         setupMapSelector();
         setupRadiusSliders(); 
 
-        // 這裡已經換回您指定的 ETOPO_CLD.png 預設圖檔！
         new THREE.TextureLoader().load('ETOPO_CLD.png', t => {
             globe.material.map = t;
             globe.material.color.setHex(0xffffff);
