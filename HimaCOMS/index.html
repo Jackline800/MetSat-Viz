@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>日韓氣象衛星演進時間軸 (相對路徑 SAT 版) - 可拖曳升級版</title>
+    <title>日韓氣象衛星演進時間軸 (拖曳與縮放升級版)</title>
     <style>
         body { 
             font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; 
@@ -10,7 +10,8 @@
             color: #fff; 
             padding: 40px 20px; 
             margin: 0; 
-            overflow-x: auto; 
+            overflow-x: hidden; /* 防止拖曳超出邊界產生多餘卷軸 */
+            user-select: none; /* 全局防反白，提升拖曳體驗 */
         }
         /*METEOROLOGICAL SATELLITE ROADMAP*/
         .header { text-align: center; margin-bottom: 50px; }
@@ -68,44 +69,81 @@
             box-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
 
-        .node { position: absolute; width: 190px; display: flex; flex-direction: column; align-items: center; transform: translateX(-50%); z-index: 5; }
+        /* 節點容器改為絕對對齊圓圈，避免卡片放大影響排版 */
+        .node { 
+            position: absolute; 
+            width: 120px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            transform: translateX(-50%); 
+            z-index: 5; 
+        }
         .top-node { bottom: 50%; }
         .bottom-node { top: 50%; }
 
-        .connector { width: 3px; height: 35px; }
+        .connector { width: 3px; height: 35px; pointer-events: none; }
         .top-node .connector { background: #fbbf24; }
         .bottom-node .connector { background: #38bdf8; }
 
+        /* 衛星圓形 (僅限水平拖曳) */
         .circle { 
             width: 120px; height: 120px; border-radius: 50%; border: 4px solid #fff; 
             background: #0f172a; display: flex; align-items: center; justify-content: center; 
-            overflow: hidden; transition: transform 0.3s; 
+            overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; 
+            cursor: ew-resize; /* 提示使用者只能左右拖曳 */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
-        .circle img { width: 100%; height: 100%; object-fit: contain; }
-        .circle:hover { transform: scale(1.1); }
+        .circle img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+        .circle:hover { transform: scale(1.05); }
+        .circle:active { transform: scale(1.1); box-shadow: 0 8px 20px rgba(0,0,0,0.8); }
         .top-node .circle { border-color: #fbbf24; margin-bottom: 8px; }
         .bottom-node .circle { border-color: #38bdf8; margin-top: 8px; }
 
-       /* 衛星說明 (加入 cursor 提示) */
+       /* ★ 升級版的獨立資訊卡片 (支援縮放與 2D 拖曳) ★ */
         .card { 
+            position: absolute;
+            box-sizing: border-box;
             background: rgba(30, 41, 59, 0.85); 
-            padding: 10px; 
+            padding: 10px 15px; 
             border-radius: 8px; 
-            width: 140%; 
+            width: 260px; /* 固定初始寬度 */
+            left: 50%;
+            margin-left: -130px; /* 完美置中對齊節點 */
             border: 1px solid #334155; 
             text-align: left; 
-            cursor: grab; /* 提示使用者這塊可以拖曳 */
-            user-select: none; /* 防止拖曳時反白文字 */
+            
+            cursor: grab; /* 提示可任意拖曳 */
+            resize: both; /* 允許右下角隨意縮放 */
+            overflow: hidden; /* 配合 resize 的必要屬性 */
+            z-index: 10;
+            
+            min-width: 150px;
+            min-height: 80px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.6);
         }
-        /* 正在拖曳時的游標狀態 */
         .card:active { cursor: grabbing; }
 
-        .top-node .card { margin-bottom: 12px; border-top: 3px solid #fbbf24; }
-        .bottom-node .card { margin-top: 12px; border-bottom: 3px solid #38bdf8; }
-        .card h4 { margin: 0 0 5px 0; font-size: 30px; border-bottom: 1px solid #475569; padding-bottom: 3px; pointer-events: none; }
-        .card p { margin: 0; color: #cbd5e1; font-size: 26px; line-height: 1.4; pointer-events: none; }
+        /* 使用 absolute 脫離排版，縮放時不會擠壓到衛星 */
+        .top-node .card { bottom: 100%; margin-bottom: 25px; border-top: 4px solid #fbbf24; }
+        .bottom-node .card { top: 100%; margin-top: 25px; border-bottom: 4px solid #38bdf8; }
 
-        /* 時間位置 */
+        .card h4 { 
+            margin: 0 0 5px 0; 
+            font-size: 30px; /* 初始字體，會被 JS 動態覆蓋 */
+            border-bottom: 1px solid #475569; 
+            padding-bottom: 3px; 
+            pointer-events: none; /* 點擊穿透，防止干擾拖曳 */
+        }
+        .card p { 
+            margin: 0; 
+            color: #cbd5e1; 
+            font-size: 26px; /* 初始字體，會被 JS 動態覆蓋 */
+            line-height: 1.4; 
+            pointer-events: none; 
+        }
+
+        /* 時間初始位置 */
         .p1977 { left: 12%; }  
         .p1995 { left: 30%; }
         .p2005 { left: 47%; }
@@ -119,7 +157,7 @@
 <body>
 
     <div class="header">
-        <h1> </h1>
+        <h1>日韓氣象衛星演進時間軸</h1>
     </div>
 
     <div class="timeline-container">
@@ -188,42 +226,127 @@
     </div>
 
     <script>
+        // ==========================================
+        // 1. 動態字體縮放邏輯 (ResizeObserver)
+        // ==========================================
+        const BASE_CARD_WIDTH = 260; // 對應 CSS 的預設初始寬度
+        const resizeObserver = new ResizeObserver(entries => {
+            for (let entry of entries) {
+                const card = entry.target;
+                const currentWidth = card.offsetWidth; 
+                const scale = currentWidth / BASE_CARD_WIDTH;
+                
+                // 限制字體縮放比例 (防呆機制，避免字體過大或過小)
+                const clampedScale = Math.max(0.6, Math.min(scale, 2.5)); 
+                
+                const h4 = card.querySelector('h4');
+                const p = card.querySelector('p');
+                if(h4) h4.style.fontSize = `${30 * clampedScale}px`;
+                if(p) p.style.fontSize = `${26 * clampedScale}px`;
+            }
+        });
+
+        // ==========================================
+        // 2. 衛星時間軸拖曳 & 卡片空間拖曳邏輯
+        // ==========================================
         const nodes = document.querySelectorAll('.node');
-        
+        const container = document.querySelector('.timeline-container');
+
         nodes.forEach(node => {
+            const circle = node.querySelector('.circle');
             const card = node.querySelector('.card');
-            if (!card) return;
+            
+            // 綁定卡片的縮放監聽器
+            if (card) resizeObserver.observe(card);
 
-            let isDragging = false;
-            let startX, startY;
-            let translateX = 0, translateY = 0;
+            // --- 狀態變數 ---
+            // 衛星拖曳狀態
+            let isDraggingNode = false;
+            let startNodeMouseX = 0, initialNodeLeftPx = 0;
+            
+            // 卡片拖曳狀態
+            let isDraggingCard = false;
+            let startCardMouseX = 0, startCardMouseY = 0;
+            let currentCardTranslateX = 0, currentCardTranslateY = 0;
 
-            card.addEventListener('mousedown', (e) => {
-                isDragging = true;
+            // ------------------------------------------
+            // 2A. 衛星圓圈滑鼠按下 (水平鎖定拖曳)
+            // ------------------------------------------
+            circle.addEventListener('mousedown', (e) => {
+                isDraggingNode = true;
                 
-                // 將目前拖曳的卡片所屬節點推到最上層，避免被其他衛星的圖片或線條蓋住
+                // 視覺置頂：讓拖曳中的整組衛星處於最上層
                 nodes.forEach(n => n.style.zIndex = 5);
-                node.style.zIndex = 100;
+                node.style.zIndex = 20;
 
-                // 記錄滑鼠點擊當下的座標（需扣掉已經移動過的距離）
-                startX = e.clientX - translateX;
-                startY = e.clientY - translateY;
+                // 取得點擊瞬間的實際絕對左側位置 (轉為 px 以利拖曳運算)
+                const style = window.getComputedStyle(node);
+                initialNodeLeftPx = parseFloat(style.left);
+                startNodeMouseX = e.clientX;
+                
+                e.stopPropagation(); // 停止事件冒泡
             });
 
+            // ------------------------------------------
+            // 2B. 文字卡片滑鼠按下 (自由 2D 拖曳)
+            // ------------------------------------------
+            if (card) {
+                card.addEventListener('mousedown', (e) => {
+                    const rect = card.getBoundingClientRect();
+                    // 【關鍵防呆】檢測是否點擊在右下角的「縮放控制區 (約 25x25 px)」
+                    // 如果是點擊縮放區，則把控制權交還給瀏覽器原生 Resize，不觸發拖曳
+                    const isClickingResizeHandle = (e.clientX > rect.right - 25) && (e.clientY > rect.bottom - 25);
+                    if (isClickingResizeHandle) return;
+
+                    isDraggingCard = true;
+                    
+                    // 視覺置頂：讓拖曳中的卡片高於其他所有卡片
+                    document.querySelectorAll('.card').forEach(c => c.style.zIndex = 10);
+                    card.style.zIndex = 100;
+
+                    // 記錄起始位置 (需扣除已存在的 Translate 偏移量)
+                    startCardMouseX = e.clientX - currentCardTranslateX;
+                    startCardMouseY = e.clientY - currentCardTranslateY;
+                    
+                    e.stopPropagation();
+                });
+            }
+
+            // ------------------------------------------
+            // 全局滑鼠移動事件 (處理真正的拖曳位移)
+            // ------------------------------------------
             window.addEventListener('mousemove', (e) => {
-                if (!isDragging) return;
-                
-                // 計算新的移動距離
-                translateX = e.clientX - startX;
-                translateY = e.clientY - startY;
-                
-                // 利用 transform 套用位移，不影響原本的 Flex 佈局
-                card.style.transform = `translate(${translateX}px, ${translateY}px)`;
+                // 處理衛星沿著時間軸滑動
+                if (isDraggingNode) {
+                    const deltaX = e.clientX - startNodeMouseX;
+                    let newLeft = initialNodeLeftPx + deltaX;
+                    
+                    // 防止衛星被拖出左右邊界
+                    newLeft = Math.max(0, Math.min(newLeft, container.clientWidth));
+                    
+                    // 寫入新的 left (px 單位覆蓋掉原本 CSS 的百分比)
+                    node.style.left = `${newLeft}px`;
+                }
+
+                // 處理卡片的自由移動
+                if (isDraggingCard && card) {
+                    currentCardTranslateX = e.clientX - startCardMouseX;
+                    currentCardTranslateY = e.clientY - startCardMouseY;
+                    
+                    // 使用 transform: translate() 不會影響周遭元素的排版
+                    card.style.transform = `translate(${currentCardTranslateX}px, ${currentCardTranslateY}px)`;
+                }
             });
 
-            // 當滑鼠放開或離開視窗時，停止拖曳
-            window.addEventListener('mouseup', () => { isDragging = false; });
-            window.addEventListener('mouseleave', () => { isDragging = false; });
+            // ------------------------------------------
+            // 全局滑鼠放開事件 (停止拖曳)
+            // ------------------------------------------
+            const stopDragging = () => {
+                isDraggingNode = false;
+                isDraggingCard = false;
+            };
+            window.addEventListener('mouseup', stopDragging);
+            window.addEventListener('mouseleave', stopDragging); // 滑鼠離開視窗也停止
         });
     </script>
 </body>
