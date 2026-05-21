@@ -8,7 +8,6 @@
         :root { --bg: #0a0c11; --ui: #ffffff; --accent: #3498db; }
         body { margin: 0; background: var(--bg); color: #333; font-family: sans-serif; display: flex; height: 100vh; overflow: hidden; }
         
-        /* 手機版專屬按鈕：預設隱藏，只有在小螢幕才顯示 */
         #mobile-menu-btn {
             display: none;
             position: absolute;
@@ -72,24 +71,14 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* ★ 手機版 RWD 適配 (當螢幕寬度小於 768px 時觸發) ★ */
         @media (max-width: 768px) {
             #mobile-menu-btn { display: block; }
             #sidebar {
-                position: absolute;
-                left: 0;
-                top: 0;
-                height: 100%;
-                width: 85%;
-                max-width: 350px;
-                transform: translateX(-100%); /* 預設收起 */
+                position: absolute; left: 0; top: 0; height: 100%;
+                width: 85%; max-width: 350px; transform: translateX(-100%);
             }
-            #sidebar.open {
-                transform: translateX(0); /* 點擊後滑出 */
-            }
-            #viewer {
-                width: 100vw;
-            }
+            #sidebar.open { transform: translateX(0); }
+            #viewer { width: 100vw; }
         }
     </style>
 </head>
@@ -316,17 +305,14 @@
         { cat: "低軌/繞極 (環境為主)", name: "AOS-Sky", lon: 105, lat: 0, orb: "LEO", color: 0x74b9ff }
     ];
 
-    // 動態獲取目前的畫布寬度 (手機全螢幕，桌機扣掉側邊欄)
     function getViewerWidth() {
         return window.innerWidth <= 768 ? window.innerWidth : window.innerWidth - 400;
     }
 
-    // 側邊欄切換邏輯
     function toggleSidebar() {
         document.getElementById('sidebar').classList.toggle('open');
     }
 
-    // 手機版防呆：點擊 3D 畫布時自動收起側邊欄
     document.getElementById('viewer').addEventListener('mousedown', () => {
         if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
     });
@@ -342,7 +328,6 @@
         
         renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(viewerWidth, window.innerHeight);
-        // 設定像素比例，讓手機上看起來更清晰，同時避免效能過度消耗
         renderer.setPixelRatio(window.devicePixelRatio > 1 ? 1.5 : 1);
         document.getElementById('viewer').appendChild(renderer.domElement);
 
@@ -405,6 +390,7 @@
         };
     }
 
+    // ★ 升級：加入全選與防衝突邏輯 ★
     function buildLibrary() {
         const lib = document.getElementById('library'); 
         lib.innerHTML = '';
@@ -418,15 +404,47 @@
         for (const [catName, items] of Object.entries(categories)) {
             const header = document.createElement('div');
             header.className = 'cat-title';
-            header.innerHTML = `<span>${catName} (${items.length})</span><span class="cat-icon">▼</span>`;
+            // 加入全選按鈕，並利用 style 與 class 進行區隔
+            header.innerHTML = `
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span>${catName} (${items.length})</span>
+                    <button class="select-all-btn" style="padding: 2px 6px; font-size: 0.65rem; width: auto; margin: 0; background: #2980b9; border-radius: 4px;">全選</button>
+                </div>
+                <span class="cat-icon">▼</span>
+            `;
             
             const content = document.createElement('div');
             content.className = 'cat-content';
             
-            header.onclick = () => {
+            // 點擊標題列展開/收合
+            header.onclick = (e) => {
+                // 防衝突：如果點擊的是「全選」按鈕，則不觸發手風琴收合
+                if(e.target.classList.contains('select-all-btn')) return;
+
                 const isOpen = content.classList.contains('open');
                 content.classList.toggle('open');
                 header.querySelector('.cat-icon').innerText = isOpen ? '▼' : '▲';
+            };
+
+            // 實作全選按鈕邏輯
+            const selectAllBtn = header.querySelector('.select-all-btn');
+            selectAllBtn.onclick = (e) => {
+                e.stopPropagation(); // 雙重防止觸發外層 onClick
+                const isSelectAll = selectAllBtn.innerText === '全選';
+                
+                // 切換按鈕外觀與文字
+                selectAllBtn.innerText = isSelectAll ? '全清' : '全選';
+                selectAllBtn.style.background = isSelectAll ? '#e74c3c' : '#2980b9'; // 全清變紅色，全選變藍色
+
+                // 批次勾選或取消該分類下的所有衛星
+                items.forEach(item => {
+                    const idx = item.index;
+                    const chk = document.getElementById(`chk-${idx}`);
+                    if (chk && chk.checked !== isSelectAll) {
+                        chk.checked = isSelectAll;
+                        toggleSat(idx); // 觸發實際的 3D 繪圖更新
+                    }
+                });
             };
 
             items.forEach(item => {
@@ -527,7 +545,6 @@
             }
             const worldPos = new THREE.Vector3(); p.mesh.getWorldPosition(worldPos);
             
-            // 動態判定螢幕寬度，如果為手機，投影位置要針對全螢幕調整
             const viewerW = getViewerWidth();
             const offsetLeft = window.innerWidth <= 768 ? 0 : 400;
 
@@ -584,7 +601,6 @@
         }
     }
 
-    // 當螢幕大小改變 (包含手機旋轉) 時自動適應
     window.addEventListener('resize', () => {
         const viewerWidth = getViewerWidth();
         camera.aspect = viewerWidth / window.innerHeight; 
