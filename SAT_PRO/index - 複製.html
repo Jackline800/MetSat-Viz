@@ -44,12 +44,32 @@
     <h2>WMO 衛星系統 (全數據匯入)</h2>
     
     <div class="group">
-        <label>1. 地球底圖 (等經緯 PNG/JPG)</label>
+        <label>1. 🌍 全球觀測底圖切換</label>
+        <select id="map-selector" style="margin-bottom: 8px;">
+            <option value="ETOPO_CLD.png">方案一：模擬動態雲圖 (預設)</option>
+            <option value="ETOPO1_ELEVATION_OL_small.png">方案二：地形底圖（一）</option>
+            <option value="ETOPO1_GMT_small.png">方案三：地形底圖（二）</option>
+            <option value="City_Light_ETOPO.png">方案四：城市夜間燈光圖</option>
+			<option value="界王星_v.png">方案五：界王星</option>
+        </select>
+        <label style="font-size: 0.75rem; color: #7f8c8d; font-weight: normal;">或手動匯入本地地圖：</label>
         <input type="file" id="map-upload" accept="image/*">
     </div>
 
     <div class="group">
-        <label>2. 地球自轉與縮放 (滾輪控制)</label>
+        <label>2. 🛰️ 軌道半徑/高度調整</label>
+        <div style="margin-bottom: 8px;">
+            <span style="font-size: 0.75rem; color: #555;">同步軌道遠近 (GEO Radius):</span>
+            <input type="range" id="geo-radius-ctrl" min="3.3" max="6.0" step="0.05" value="3.65">
+        </div>
+        <div>
+            <span style="font-size: 0.75rem; color: #555;">低軌/繞極遠近 (LEO Radius):</span>
+            <input type="range" id="leo-radius-ctrl" min="3.05" max="4.5" step="0.05" value="3.25">
+        </div>
+    </div>
+
+    <div class="group">
+        <label>3. 地球自轉速度控制</label>
         <div style="display: flex; align-items: center; gap: 10px;">
             <input type="range" id="speed-ctrl" min="0" max="0.01" step="0.0001" value="0.001">
             <button id="rot-btn" onclick="toggleRotation()" style="width:80px;">暫停</button>
@@ -57,18 +77,25 @@
     </div>
 
     <div class="group">
-        <label>3. 衛星庫 (勾選顯示 / 換圖)</label>
+        <label>4. 衛星庫 (勾選顯示 / 換圖)</label>
         <div id="library"></div>
     </div>
 
     <div class="group">
-        <label>4. 手動新增衛星</label>
-        <div style="display: flex; gap: 3px;">
+        <label>5. 手動新增衛星</label>
+        <div style="display: flex; gap: 3px; margin-bottom: 5px;">
             <input type="text" id="cust-name" placeholder="名稱" style="flex:2;">
-            <input type="number" id="cust-lon" placeholder="經" style="flex:1;">
-            <input type="number" id="cust-lat" placeholder="緯" style="flex:1;">
+            <select id="cust-orb" style="flex:2; padding: 4px; font-size: 0.8rem; border-radius: 5px; border: 1px solid #ddd;">
+                <option value="GEO">同步軌道 (GEO)</option>
+                <option value="LEO_WX">低軌/繞極 (氣象)</option>
+                <option value="LEO_ENV">低軌/繞極 (環境)</option>
+            </select>
         </div>
-        <button style="background: #27ae60;" onclick="addCustom()">部署</button>
+        <div style="display: flex; gap: 3px;">
+            <input type="number" id="cust-lon" placeholder="經度 (如 121)" style="flex:1;">
+            <input type="number" id="cust-lat" placeholder="緯度 (如 23)" style="flex:1;">
+        </div>
+        <button style="background: #27ae60;" onclick="addCustom()">部署衛星</button>
     </div>
     
     <input type="file" id="hidden-file-input" style="display:none;" accept="image/*">
@@ -81,31 +108,54 @@
 
 <script>
     let scene, camera, renderer, globe, controls, isRotating = true, targetIdx = null;
+    let geoRadius = 3.65, leoRadius = 3.25; 
     const activeSats = new Map(), labelPairs = [];
 
-    // 擴展 WMO 資料庫 - 補全 GEO 與 LEO SSO 核心
+    // 【載入完整 Excel 數據】：已結合您的 GEO 完整列表與 LEO 分類
     const satDatabase = [
-        // --- GEO Core ---
-        { cat: "GEO 靜止軌道", name: "Himawari-9 (140.7E)", lon: 140.7, lat: 0, orb: "GEO", color: 0xffa502 },
-        { cat: "GEO 靜止軌道", name: "GOES-18 (137.2W)", lon: -137.2, lat: 0, orb: "GEO", color: 0x70a1ff },
-        { cat: "GEO 靜止軌道", name: "GOES-16 (75.2W)", lon: -75.2, lat: 0, orb: "GEO", color: 0x70a1ff },
+        // --- GEO Core 地球同步衛星 (依地區機構與經度時序排列) ---
+        { cat: "GEO 靜止軌道", name: "Himawari-9 (140.7E)", lon: 140.7, lat: 0, orb: "GEO", color: 0xffa502, icon: "衛星/地球同步/H89.png" },
+        { cat: "GEO 靜止軌道", name: "Himawari-8 (140.7E)", lon: 140.7, lat: 0, orb: "GEO", color: 0xff7f50, icon: "衛星/地球同步/H89.png" },
+        { cat: "GEO 靜止軌道", name: "Himawari-10 (140.7E)", lon: 140.7, lat: 0, orb: "GEO", color: 0xeccc68 },
+        
+        { cat: "GEO 靜止軌道", name: "GEO-KOMPSAT-2A (128.2E)", lon: 128.2, lat: 0, orb: "GEO", color: 0x54a0ff },
+        { cat: "GEO 靜止軌道", name: "GEO-KOMPSAT-2B (128.2E)", lon: 128.2, lat: 0, orb: "GEO", color: 0x2ed573 },
+        { cat: "GEO 靜止軌道", name: "GEO-KOMPSAT-5 (128.2E)", lon: 128.2, lat: 0, orb: "GEO", color: 0x5f27cd },
+        
+        { cat: "GEO 靜止軌道", name: "GOES-19 (75.2W)", lon: -75.2, lat: 0, orb: "GEO", color: 0x70a1ff },
+        { cat: "GEO 靜止軌道", name: "GOES-18 (137.0W)", lon: -137.0, lat: 0, orb: "GEO", color: 0x70a1ff, icon: "衛星/地球同步/GOES-R.png" },
+        { cat: "GEO 靜止軌道", name: "GOES-16 (75.2W)", lon: -75.2, lat: 0, orb: "GEO", color: 0x70a1ff, icon: "衛星/地球同步/GOES-R_16.png" },
+        { cat: "GEO 靜止軌道", name: "GOES-17 (89.5W)", lon: -89.5, lat: 0, orb: "GEO", color: 0x2e86de },
+        
+        { cat: "GEO 靜止軌道", name: "FY-4B (105.0E)", lon: 105.0, lat: 0, orb: "GEO", color: 0xff4757 },
+        { cat: "GEO 靜止軌道", name: "FY-4A (86.5E)", lon: 86.5, lat: 0, orb: "GEO", color: 0xff4757 },
+        
         { cat: "GEO 靜止軌道", name: "Meteosat-12 (0.3W)", lon: -0.3, lat: 0, orb: "GEO", color: 0x2ed573 },
-        { cat: "GEO 靜止軌道", name: "FY-4B (105E)", lon: 105, lat: 0, orb: "GEO", color: 0xff4757 },
-        { cat: "GEO 靜止軌道", name: "GK-2A (128.2E)", lon: 128.2, lat: 0, orb: "GEO", color: 0x54a0ff },
-        { cat: "GEO 靜止軌道", name: "INSAT-3DR (74E)", lon: 74, lat: 0, orb: "GEO", color: 0xe67e22 },
+        { cat: "GEO 靜止軌道", name: "MTG-S1 (3.4E)", lon: 3.4, lat: 0, orb: "GEO", color: 0x2ecc71 },
+        { cat: "GEO 靜止軌道", name: "MTG-I3 (0.0E)", lon: 0.0, lat: 0, orb: "GEO", color: 0x10ac84 },
+        { cat: "GEO 靜止軌道", name: "MTG-S2 (0.0E)", lon: 0.0, lat: 0, orb: "GEO", color: 0x1dd1a1 },
+        { cat: "GEO 靜止軌道", name: "MTG-I4 (0.0E)", lon: 0.0, lat: 0, orb: "GEO", color: 0x05c46b },
+        
+        { cat: "GEO 靜止軌道", name: "Electro-L N2 (14.5W)", lon: -14.5, lat: 0, orb: "GEO", color: 0xa55eea },
+        { cat: "GEO 靜止軌道", name: "Electro-L N3 (76.0E)", lon: 76.0, lat: 0, orb: "GEO", color: 0xa55eea },
+        { cat: "GEO 靜止軌道", name: "Electro-L N5 (76.0E)", lon: 76.0, lat: 0, orb: "GEO", color: 0x74b9ff },
+        { cat: "GEO 靜止軌道", name: "Electro-L N4 (165.8E)", lon: 165.8, lat: 0, orb: "GEO", color: 0xa55eea },
+        { cat: "GEO 靜止軌道", name: "Electro-L N6 (0.0W)", lon: 0.0, lat: 0, orb: "GEO", color: 0xdff9fb },
+        
+        { cat: "GEO 靜止軌道", name: "INSAT-3DR (74.0E)", lon: 74.0, lat: 0, orb: "GEO", color: 0xe67e22 },
 
-        // --- LEO SSO (動態繞極) ---
-        { cat: "LEO 繞極軌道", name: "Metop-C (Morning)", lon: 0, lat: 0, orb: "LEO", color: 0x1dd1a1 },
-        { cat: "LEO 繞極軌道", name: "Metop-B (Morning)", lon: 0, lat: 0, orb: "LEO", color: 0x1dd1a1 },
-        { cat: "LEO 繞極軌道", name: "NOAA-21 (Afternoon)", lon: 0, lat: 0, orb: "LEO", color: 0x2ecc71 },
-        { cat: "LEO 繞極軌道", name: "Suomi-NPP", lon: 0, lat: 0, orb: "LEO", color: 0x10ac84 },
-        { cat: "LEO 繞極軌道", name: "FY-3F (Morning)", lon: 0, lat: 0, orb: "LEO", color: 0xee5253 },
-        { cat: "LEO 繞極軌道", name: "FY-3E (Early Morning)", lon: 0, lat: 0, orb: "LEO", color: 0xee5253 },
+        // --- LEO (氣象為主) ---
+        { cat: "低軌/繞極 (氣象為主)", name: "Metop-C (Morning)", lon: 0, lat: 0, orb: "LEO", color: 0x1dd1a1 },
+        { cat: "低軌/繞極 (氣象為主)", name: "Metop-B (Morning)", lon: 30, lat: 0, orb: "LEO", color: 0x1dd1a1 },
+        { cat: "低軌/繞極 (氣象為主)", name: "NOAA-21 (Afternoon)", lon: 60, lat: 0, orb: "LEO", color: 0x2ecc71 },
+        { cat: "低軌/繞極 (氣象為主)", name: "Suomi-NPP", lon: 90, lat: 0, orb: "LEO", color: 0x10ac84 },
+        { cat: "低軌/繞極 (氣象為主)", name: "FY-3F (Morning)", lon: 120, lat: 0, orb: "LEO", color: 0xee5253 },
+        { cat: "低軌/繞極 (氣象為主)", name: "FY-3E (Early Morning)", lon: 150, lat: 0, orb: "LEO", color: 0xee5253 },
 
-        // --- Research ---
-        { cat: "特殊/研究軌道", name: "COSMIC-2 (Inclined)", lon: 121.5, lat: 23.5, orb: "LEO", color: 0x5f27cd },
-        { cat: "特殊/研究軌道", name: "GPM-Core (Rain)", lon: -10, lat: 35, orb: "LEO", color: 0x00d2d3 },
-        { cat: "特殊/研究軌道", name: "Sentinel-6", lon: 180, lat: -20, orb: "LEO", color: 0x48dbfb }
+        // --- LEO (環境為主) ---
+        { cat: "低軌/繞極 (環境為主)", name: "COSMIC-2 (Inclined)", lon: 200, lat: 23.5, orb: "LEO", color: 0x5f27cd },
+        { cat: "低軌/繞極 (環境為主)", name: "GPM-Core (Rain)", lon: 250, lat: 35, orb: "LEO", color: 0x00d2d3 },
+        { cat: "低軌/繞極 (環境為主)", name: "Sentinel-6", lon: 300, lat: -20, orb: "LEO", color: 0x48dbfb }
     ];
 
     function init() {
@@ -120,14 +170,60 @@
         controls.enableDamping = true;
         controls.minDistance = 4; controls.maxDistance = 25;
 
-        globe = new THREE.Mesh(new THREE.SphereGeometry(3, 64, 64), new THREE.MeshPhongMaterial({ shininess: 15 }));
+        const globeMat = new THREE.MeshPhongMaterial({ color: 0x1b4f72, shininess: 15 });
+        globe = new THREE.Mesh(new THREE.SphereGeometry(3, 64, 64), globeMat);
         scene.add(globe);
 
         const sun = new THREE.DirectionalLight(0xffffff, 1.2); sun.position.set(5, 5, 5); scene.add(sun);
-        scene.add(new THREE.AmbientLight(0x444444));
+        scene.add(new THREE.AmbientLight(0x555555));
 
         buildLibrary();
+        setupMapSelector();
+        setupRadiusSliders(); 
+
+        // 這裡已經換回您指定的 ETOPO_CLD.png 預設圖檔！
+        new THREE.TextureLoader().load('ETOPO_CLD.png', t => {
+            globe.material.map = t;
+            globe.material.color.setHex(0xffffff);
+            globe.material.needsUpdate = true;
+        }, undefined, err => {
+            console.error("預設底圖載入失敗，可能正在本機執行或解析度過大", err);
+        });
+
         animate();
+    }
+
+    function setupRadiusSliders() {
+        document.getElementById('geo-radius-ctrl').oninput = function(e) {
+            geoRadius = parseFloat(e.target.value);
+            updateStaticGeoPositions(); 
+        };
+        document.getElementById('leo-radius-ctrl').oninput = function(e) {
+            leoRadius = parseFloat(e.target.value);
+        };
+    }
+
+    function updateStaticGeoPositions() {
+        labelPairs.forEach(p => {
+            if (p.satData.orb === "GEO") {
+                const phi = (90 - p.satData.lat) * (Math.PI / 180);
+                const theta = (p.satData.lon + 180) * (Math.PI / 180);
+                p.mesh.position.set(-geoRadius * Math.sin(phi) * Math.cos(theta), geoRadius * Math.cos(phi), geoRadius * Math.sin(phi) * Math.sin(theta));
+            }
+        });
+    }
+
+    function setupMapSelector() {
+        document.getElementById('map-selector').onchange = function(e) {
+            const selectedPath = e.target.value;
+            new THREE.TextureLoader().load(selectedPath, t => { 
+                globe.material.map = t; 
+                globe.material.color.setHex(0xffffff);
+                globe.material.needsUpdate = true; 
+            }, undefined, err => {
+                alert("⚠️ 載入失敗！找不到圖片：" + selectedPath + "\n請確認是否已上傳至同資料夾中。");
+            });
+        };
     }
 
     function buildLibrary() {
@@ -164,31 +260,40 @@
     function removeSat(idx) {
         const d = activeSats.get(idx); if (d) { 
             if (d.satData.orb === "GEO") globe.remove(d.mesh); else scene.remove(d.mesh);
-            d.label.remove(); labelPairs.splice(labelPairs.indexOf(d), 1); activeSats.delete(idx); 
+            d.element.remove(); 
+            labelPairs.splice(labelPairs.indexOf(d), 1); activeSats.delete(idx); 
         }
     }
 
     function createSatObj(sat) {
         const phi = (90 - sat.lat) * (Math.PI / 180), theta = (sat.lon + 180) * (Math.PI / 180);
-        let mesh;
+        const container = new THREE.Group();
+        
+        const fallbackMesh = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 16), new THREE.MeshBasicMaterial({ color: sat.color }));
+        container.add(fallbackMesh);
+
         if (sat.icon) {
-            mesh = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.TextureLoader().load(sat.icon) }));
-            mesh.scale.set(0.5, 0.5, 1);
-        } else {
-            mesh = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 16), new THREE.MeshBasicMaterial({ color: sat.color }));
+            new THREE.TextureLoader().load(sat.icon, t => {
+                container.remove(fallbackMesh);
+                const spriteMat = new THREE.SpriteMaterial({ map: t });
+                const sprite = new THREE.Sprite(spriteMat);
+                sprite.scale.set(0.4, 0.4, 1);
+                container.add(sprite);
+            }, undefined, err => {
+                console.log(`未檢測到去背圖檔：${sat.icon}，已自動切換為高亮圓點標註。`);
+            });
         }
 
         if (sat.orb === "GEO") {
-            const alt = 3.65;
-            mesh.position.set(-alt * Math.sin(phi) * Math.cos(theta), alt * Math.cos(phi), alt * Math.sin(phi) * Math.sin(theta));
-            globe.add(mesh);
+            container.position.set(-geoRadius * Math.sin(phi) * Math.cos(theta), geoRadius * Math.cos(phi), geoRadius * Math.sin(phi) * Math.sin(theta));
+            globe.add(container);
         } else {
-            scene.add(mesh);
+            scene.add(container);
         }
 
         const el = document.createElement('div'); el.className = 'sat-label'; el.innerText = sat.name;
         document.getElementById('viewer').appendChild(el);
-        const pair = { element: el, mesh: mesh, satData: sat, offset: Math.random() * 100 }; 
+        const pair = { element: el, mesh: container, satData: sat, offset: Math.random() * 100 }; 
         labelPairs.push(pair); return pair;
     }
 
@@ -200,8 +305,16 @@
 
         labelPairs.forEach(p => {
             if (p.satData.orb === "LEO") {
-                const speed = 0.4; const radius = 3.25;
-                p.mesh.position.set(0, radius * Math.cos(time * speed + p.offset), radius * Math.sin(time * speed + p.offset));
+                const speed = 0.4;
+                const angle = time * speed + p.offset;
+                
+                const y = leoRadius * Math.cos(angle);
+                const r_xz = leoRadius * Math.sin(angle);
+                const lonRad = (p.satData.lon || 0) * (Math.PI / 180);
+                
+                const x = -r_xz * Math.cos(lonRad);
+                const z = r_xz * Math.sin(lonRad);
+                p.mesh.position.set(x, y, z);
             }
             const worldPos = new THREE.Vector3(); p.mesh.getWorldPosition(worldPos);
             const cameraDist = camera.position.distanceTo(worldPos), globeDist = camera.position.distanceTo(globe.position);
@@ -216,18 +329,46 @@
 
     document.getElementById('map-upload').onchange = function(e) {
         const r = new FileReader(); r.onload = ev => {
-            new THREE.TextureLoader().load(ev.target.result, t => { globe.material.map = t; globe.material.needsUpdate = true; });
+            new THREE.TextureLoader().load(ev.target.result, t => { 
+                globe.material.map = t; 
+                globe.material.color.setHex(0xffffff);
+                globe.material.needsUpdate = true; 
+            });
         }; r.readAsDataURL(e.target.files[0]);
     };
 
     function addCustom() {
-        const n = document.getElementById('cust-name').value || "Custom";
-        const lo = parseFloat(document.getElementById('cust-lon').value), la = parseFloat(document.getElementById('cust-lat').value);
-        if (!isNaN(lo) && !isNaN(la)) {
-            satDatabase.push({ cat: "手動新增", name: n, lon: lo, lat: la, orb: "LEO", color: 0x27ae60 });
-            buildLibrary(); const idx = satDatabase.length - 1;
-            document.getElementById(`chk-${idx}`).checked = true; toggleSat(idx);
+        const n = document.getElementById('cust-name').value || "未命名衛星";
+        const lo = parseFloat(document.getElementById('cust-lon').value) || 0;
+        const la = parseFloat(document.getElementById('cust-lat').value) || 0;
+        const orbType = document.getElementById('cust-orb').value;
+        
+        let category = "手動新增";
+        let orb = "GEO";
+        let color = 0x27ae60;
+        let iconPath = undefined;
+        
+        if (orbType === "GEO") {
+            category = "GEO 靜止軌道";
+            orb = "GEO";
+            color = 0xffa502;
+        } else if (orbType === "LEO_WX") {
+            category = "低軌/繞極 (氣象為主)";
+            orb = "LEO";
+            color = 0x1dd1a1;
+            iconPath = "衛星/繞極/custom_wx.png"; 
+        } else if (orbType === "LEO_ENV") {
+            category = "低軌/繞極 (環境為主)";
+            orb = "LEO";
+            color = 0x5f27cd;
+            iconPath = "衛星/繞極/custom_env.png"; 
         }
+        
+        satDatabase.push({ cat: category, name: n, lon: lo, lat: la, orb: orb, color: color, icon: iconPath });
+        buildLibrary(); 
+        const idx = satDatabase.length - 1;
+        document.getElementById(`chk-${idx}`).checked = true; 
+        toggleSat(idx);
     }
 
     window.addEventListener('resize', () => {
