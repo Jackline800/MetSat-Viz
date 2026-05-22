@@ -95,8 +95,9 @@
             <option value="ETOPO_CLD.png">方案一：模擬動態雲圖 (預設)</option>
             <option value="ETOPO1_ELEVATION_OL_small.png">方案二：地形底圖（一）</option>
             <option value="ETOPO1_GMT_small.png">方案三：地形底圖（二）</option>
-            <option value="City_Light_ETOPO.png">方案四：城市夜間燈光圖</option>
-			<option value="界王星_v.png">方案五：界王星</option>
+            <option value="world.topo.bathy.jpg">方案四：Blue_Marble_bathy</option>
+			<option value="City_Light_ETOPO.png">方案五：城市夜間燈光圖</option>
+			<option value="界王星_v.png">方案六：界王星</option>
         </select>
         <label style="font-size: 0.75rem; color: #7f8c8d; font-weight: normal;">或手動匯入本地地圖：</label>
         <input type="file" id="map-upload" accept="image/*">
@@ -166,13 +167,13 @@
         { cat: "GEO 靜止軌道", name: "GEO-KOMPSAT-2A (128.2E)", lon: 128.2, lat: 0, orb: "GEO", color: 0x54a0ff , icon: "衛星/地球同步/GK2.png" },
         { cat: "GEO 靜止軌道", name: "GEO-KOMPSAT-2B (128.2E)", lon: 128.2, lat: 0, orb: "GEO", color: 0x2ed573 , icon: "衛星/地球同步/GK2.png"},
         { cat: "GEO 靜止軌道", name: "GEO-KOMPSAT-5 (128.2E)", lon: 128.2, lat: 0, orb: "GEO", color: 0x5f27cd , icon: "衛星/地球同步/GK5.png"},
-        { cat: "GEO 靜止軌道", name: "GOES-19 (75.2W)", lon: -75.2, lat: 0, orb: "GEO", color: 0x70a1ff },
+        { cat: "GEO 靜止軌道", name: "GOES-19 (75.2W)", lon: -75.2, lat: 0, orb: "GEO", color: 0x70a1ff , icon: "衛星/地球同步/GOES-U_19.png"},
         { cat: "GEO 靜止軌道", name: "GOES-18 (137.0W)", lon: -137.0, lat: 0, orb: "GEO", color: 0x70a1ff, icon: "衛星/地球同步/GOES-R_1718.png" },
         { cat: "GEO 靜止軌道", name: "GOES-16 (75.2W)", lon: -75.2, lat: 0, orb: "GEO", color: 0x70a1ff, icon: "衛星/地球同步/GOES-R_16.png" },
         { cat: "GEO 靜止軌道", name: "GOES-17 (89.5W)", lon: -89.5, lat: 0, orb: "GEO", color: 0x2e86de , icon: "衛星/地球同步/GOES-R_1718.png" },
-        { cat: "GEO 靜止軌道", name: "FY-4B (105.0E)", lon: 105.0, lat: 0, orb: "GEO", color: 0xff4757 },
-        { cat: "GEO 靜止軌道", name: "FY-4A (86.5E)", lon: 86.5, lat: 0, orb: "GEO", color: 0xff4757 },
-        { cat: "GEO 靜止軌道", name: "Meteosat-12 (0.3W)", lon: -0.3, lat: 0, orb: "GEO", color: 0x2ed573 },
+        { cat: "GEO 靜止軌道", name: "FY-4B (105.0E)", lon: 105.0, lat: 0, orb: "GEO", color: 0xff4757 , icon: "衛星/地球同步/FY_4B.png"},
+        { cat: "GEO 靜止軌道", name: "FY-4A (86.5E)", lon: 86.5, lat: 0, orb: "GEO", color: 0xff4757 , icon: "衛星/地球同步/FY_4A.png"},
+        { cat: "GEO 靜止軌道", name: "Meteosat-12 (0.3W)", lon: -0.3, lat: 0, orb: "GEO", color: 0x2ed573 , icon: "衛星/地球同步/Meteosat_12.png"},
         { cat: "GEO 靜止軌道", name: "MTG-S1 (3.4E)", lon: 3.4, lat: 0, orb: "GEO", color: 0x2ecc71 },
         { cat: "GEO 靜止軌道", name: "MTG-I3 (0.0E)", lon: 0.0, lat: 0, orb: "GEO", color: 0x10ac84 },
         { cat: "GEO 靜止軌道", name: "MTG-S2 (0.0E)", lon: 0.0, lat: 0, orb: "GEO", color: 0x1dd1a1 },
