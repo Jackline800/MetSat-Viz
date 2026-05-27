@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>向日葵8/9號氣象衛星觀測休止履歷監測面板</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen p-6">
+
+    <div class="max-w-7xl mx-auto">
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-200 pb-6 mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-950 flex items-center gap-2">
+                    🛰️ Himawari-8 / 9 觀測休止履歷查詢系統
+                </h1>
+                <p class="text-sm text-slate-500 mt-1">資料來源：日本氣象廳 (JMA) | 雙衛星歷史資料整合面板</p>
+            </div>
+            <div class="mt-4 md:mt-0 text-right">
+                <span class="text-xs bg-emerald-100 text-emerald-800 font-medium px-2.5 py-1 rounded-full" id="update-tag">
+                    更新時間：載入中...
+                </span>
+            </div>
+        </header>
+
+        <section class="bg-white p-4 rounded-xl shadow-xs border border-slate-200 mb-6 flex flex-col gap-6">
+            
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100 pb-2 gap-4">
+                <div>
+                    <span class="block text-sm font-semibold text-slate-700">📡 選擇觀測衛星</span>
+                    <span class="text-xs text-slate-400">一切換衛星，年度選單與數據將自動刷新</span>
+                </div>
+                <div class="flex bg-slate-100 p-1 rounded-lg w-full sm:w-auto">
+                    <button id="tab-H9" onclick="switchSatellite('H9')" class="w-1/2 sm:w-40 py-2 text-sm font-medium rounded-md bg-white text-slate-900 shadow-xs cursor-pointer text-center">
+                        向日葵9號 (Himawari-9)
+                    </button>
+                    <button id="tab-H8" onclick="switchSatellite('H8')" class="w-1/2 sm:w-40 py-2 text-sm font-medium rounded-md text-slate-600 hover:text-slate-900 cursor-pointer text-center">
+                        向日葵8號 (Himawari-8)
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                <div class="flex items-center gap-3 w-full lg:w-auto">
+                    <div class="shrink-0">
+                        <label for="year-select" class="block text-sm font-semibold text-slate-700">📅 年度篩選</label>
+                        <span class="text-xs text-slate-400">僅顯示所選年份之事件</span>
+                    </div>
+                    <select id="year-select" class="w-full sm:w-64 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium text-slate-800 shadow-2xs focus:outline-hidden focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                        <option value="ALL">全部年份</option>
+                    </select>
+                </div>
+
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full lg:w-auto justify-end">
+                    <div class="sm:text-right">
+                        <span class="block text-sm font-semibold text-slate-700">🕰️ 時間視角切換</span>
+                        <span class="text-xs text-slate-400">臺灣時間會自動扣除 10 分鐘並轉為 LST (UTC+8)</span>
+                    </div>
+                    <div class="inline-flex rounded-md shadow-xs bg-slate-100 p-1 shrink-0 w-full sm:w-auto" role="group">
+                        <button id="btn-jma" onclick="switchTimeMode('JMA')" class="w-1/2 sm:w-auto px-4 py-2 text-sm font-medium rounded-md bg-slate-800 text-white shadow-xs cursor-pointer">
+                            日本氣象廳 (JMA UTC)
+                        </button>
+                        <button id="btn-tw" onclick="switchTimeMode('TW')" class="w-1/2 sm:w-auto px-4 py-2 text-sm font-medium rounded-md text-slate-600 hover:text-slate-900 cursor-pointer">
+                            臺灣地區 (CWA LST)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <h2 class="text-lg font-bold text-slate-950 mb-3" id="summary-title">📊 歷史事件統計摘要</h2>
+        <section class="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8" id="summary-cards">
+            </section>
+
+        <div class="flex justify-between items-center mb-3">
+            <h2 class="text-lg font-bold text-slate-950" id="table-title">📋 觀測休止完整紀錄</h2>
+            <div class="text-xs text-slate-500">
+                顯示格式：<span class="font-bold text-blue-600">西元 (民國)</span>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-xs border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200 text-sm text-left">
+                    <thead class="bg-slate-50 text-slate-700 font-semibold">
+                        <tr>
+                            <th class="px-4 py-3">衛星</th>
+                            <th class="px-4 py-3">年度 (曆法雙顯)</th>
+                            <th class="px-3 py-3">月份</th>
+                            <th class="px-4 py-3">日期原文</th>
+                            <th class="px-3 py-3">類型</th>
+                            <th class="px-4 py-3" id="th-time">觀測休止時間 (JMA UTC)</th>
+                            <th class="px-2 py-3 text-center">F.D.</th>
+                            <th class="px-2 py-3 text-center">Reg</th>
+                            <th class="px-5 py-3">事件類型 (繁體中文)</th>
+                            <th class="px-4 py-3">原因/備註</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 bg-white text-slate-600" id="data-table-body">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+    <script>
+        let currentSat = 'H9'; // 預設看 H9
+        let currentMode = 'JMA'; 
+        let currentYearFilter = 'ALL'; 
+
+        document.addEventListener("DOMContentLoaded", () => {
+            if (typeof ALL_SAT_DATA !== 'undefined') {
+                document.getElementById('update-tag').innerText = `網頁更新時間：${LAST_UPDATED}`;
+                updateYearDropdown(); // 初始化下拉選單
+                refreshUI();
+            } else {
+                document.getElementById('data-table-body').innerHTML = `<tr><td colspan="10" class="text-center py-8 text-rose-500">找不到 data.js，請先執行升級後的 Python 腳本。</td></tr>`;
+            }
+        });
+
+        // 當切換衛星時，年份選單需要重新適應（因為 H8 的歷史年份比 H9 更久遠）
+        function switchSatellite(satCode) {
+            currentSat = satCode;
+            currentYearFilter = 'ALL'; // 切換衛星時重設年份過濾
+            
+            // 切換 Tab 樣式
+            const tabH9 = document.getElementById('tab-H9');
+            const tabH8 = document.getElementById('tab-H8');
+            if (satCode === 'H9') {
+                tabH9.className = "w-1/2 sm:w-40 py-2 text-sm font-medium rounded-md bg-slate-800 text-white shadow-xs cursor-pointer text-center";
+                tabH8.className = "w-1/2 sm:w-40 py-2 text-sm font-medium rounded-md text-slate-600 hover:text-slate-900 cursor-pointer text-center";
+            } else {
+                tabH8.className = "w-1/2 sm:w-40 py-2 text-sm font-medium rounded-md bg-slate-800 text-white shadow-xs cursor-pointer text-center";
+                tabH9.className = "w-1/2 sm:w-40 py-2 text-sm font-medium rounded-md text-slate-600 hover:text-slate-900 cursor-pointer text-center";
+            }
+            
+            updateYearDropdown();
+            refreshUI();
+        }
+
+        // 動態更新符合目前衛星的年份選項
+        function updateYearDropdown() {
+            const select = document.getElementById('year-select');
+            
+            // 先過濾出該衛星擁有的所有年份
+            const satRecords = ALL_SAT_DATA.filter(item => item.satellite === currentSat);
+            const uniqueYears = [...new Set(satRecords.map(item => item.ad_year))].sort((a, b) => b - a);
+            
+            // 清空舊選項並保留“全部年份”
+            select.innerHTML = '<option value="ALL">全部年份</option>';
+            
+            uniqueYears.forEach(year => {
+                const sample = satRecords.find(item => item.ad_year === year);
+                const rocStr = sample ? ` (民國${sample.roc_year}年)` : '';
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = `${year}年${rocStr}`;
+                select.appendChild(option);
+            });
+            
+            select.value = currentYearFilter;
+            
+            // 綁定事件
+            select.onchange = (e) => {
+                currentYearFilter = e.target.value;
+                refreshUI();
+            };
+        }
+
+        // 取得同時被 衛星 項目與 年份 項目雙重過濾後的資料庫子集
+        function getFilteredData() {
+            let data = ALL_SAT_DATA.filter(item => item.satellite === currentSat);
+            if (currentYearFilter !== 'ALL') {
+                data = data.filter(item => item.ad_year == currentYearFilter);
+            }
+            return data;
+        }
+
+        function refreshUI() {
+            renderSummary();
+            renderTable();
+            
+            const nameMap = {'H8': '向日葵8號', 'H9': '向日葵9號'};
+            const yearText = currentYearFilter === 'ALL' ? '歷年' : `${currentYearFilter}年`;
+            document.getElementById('summary-title').innerText = `📊 ${nameMap[currentSat]} ${yearText} 事件統計摘要`;
+            document.getElementById('table-title').innerText = `📋 ${nameMap[currentSat]} ${yearText} 觀測休止完整紀錄`;
+        }
+
+        // 換算臺灣地方時與扣除10分鐘延遲
+        function parseAndConvertTime(timeRaw, mode) {
+            if (!timeRaw || timeRaw.includes('—') || !timeRaw.includes(':')) return timeRaw;
+            let match = timeRaw.match(/(\d{2}):(\d{2})/);
+            if (!match) return timeRaw;
+            
+            let hrs = parseInt(match[1]);
+            let mins = parseInt(match[2]);
+            let pCodeMatch = timeRaw.match(/\((.*?)\)/);
+            let pSuffix = pCodeMatch ? ` (${pCodeMatch[1]})` : '';
+
+            if (mode === 'TW') {
+                mins -= 10;
+                if (mins < 0) { mins += 60; hrs -= 1; }
+                hrs += 8;
+                
+                let dayFlag = "";
+                if (hrs >= 24) { hrs -= 24; dayFlag = " <span class='text-xs text-amber-600'>(隔日)</span>"; }
+                else if (hrs < 0) { hrs += 24; dayFlag = " <span class='text-xs text-amber-600'>(前日)</span>"; }
+                
+                let pad = (n) => String(n).padStart(2, '0');
+                return `<b class="text-slate-900">${pad(hrs)}:${pad(mins)}</b> <span class="text-xs text-slate-400">LST</span>${pSuffix}${dayFlag}`;
+            } else {
+                return `<b class="text-slate-900">${match[1]}:${match[2]}</b> <span class="text-xs text-slate-400">UTC</span>${pSuffix}`;
+            }
+        }
+
+        function switchTimeMode(mode) {
+            currentMode = mode;
+            const btnJma = document.getElementById('btn-jma');
+            const btnTw = document.getElementById('btn-tw');
+            const thTime = document.getElementById('th-time');
+
+            if (mode === 'TW') {
+                btnTw.className = "w-1/2 sm:w-auto px-4 py-2 text-sm font-medium rounded-md bg-blue-600 text-white shadow-xs cursor-pointer";
+                btnJma.className = "w-1/2 sm:w-auto px-4 py-2 text-sm font-medium rounded-md text-slate-600 hover:text-slate-900 cursor-pointer";
+                thTime.innerText = "臺灣地區觀測時間 (CWA LST)";
+            } else {
+                btnJma.className = "w-1/2 sm:w-auto px-4 py-2 text-sm font-medium rounded-md bg-slate-800 text-white shadow-xs cursor-pointer";
+                btnTw.className = "w-1/2 sm:w-auto px-4 py-2 text-sm font-medium rounded-md text-slate-600 hover:text-slate-900 cursor-pointer";
+                thTime.innerText = "觀測休止時間 (JMA UTC)";
+            }
+            renderTable();
+        }
+
+        function renderSummary() {
+            const filteredData = getFilteredData();
+            const counts = { '東西軌道控制': 0, '南北軌道控制': 0, '輻射計太陽校正': 0, '衛星例行維護': 0, '衛星檢修作業': 0, '其他': 0 };
+            
+            filteredData.forEach(d => {
+                if (counts[d.event_tw] !== undefined) counts[d.event_tw]++;
+                else counts['其他']++;
+            });
+
+            const colors = {
+                '東西軌道控制': 'border-l-blue-500 bg-blue-50/50 text-blue-700',
+                '南北軌道控制': 'border-l-indigo-500 bg-indigo-50/50 text-indigo-700',
+                '輻射計太陽校正': 'border-l-amber-500 bg-amber-50/50 text-amber-700',
+                '衛星例行維護': 'border-l-emerald-500 bg-emerald-50/50 text-emerald-700',
+                '衛星檢修作業': 'border-l-purple-500 bg-purple-50/50 text-purple-700',
+                '其他': 'border-l-slate-400 bg-slate-50 text-slate-700'
+            };
+
+            let html = '';
+            for (let [key, val] of Object.entries(counts)) {
+                html += `
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 border-l-4 ${colors[key] || 'border-l-slate-400'} shadow-2xs">
+                        <span class="block text-xs font-medium text-slate-500 uppercase tracking-wider">${key}</span>
+                        <span class="text-xl font-bold block mt-1 text-slate-900">${val} <span class="text-xs font-normal text-slate-400">次</span></span>
+                    </div>`;
+            }
+            document.getElementById('summary-cards').innerHTML = html;
+        }
+
+        function renderTable() {
+            const filteredData = getFilteredData();
+            let html = '';
+            
+            if (filteredData.length === 0) {
+                document.getElementById('data-table-body').innerHTML = `<tr><td colspan="10" class="text-center py-8 text-slate-400">查無此年份的觀測休止紀錄。</td></tr>`;
+                return;
+            }
+
+            filteredData.forEach(row => {
+                const displayTime = parseAndConvertTime(row.time_raw, currentMode);
+                const fdStyle = row.fd === 'X' ? 'text-rose-600 font-bold bg-rose-50' : 'text-emerald-600';
+                const regStyle = row.reg === 'X' ? 'text-rose-600 font-bold bg-rose-50' : 'text-emerald-600';
+                const satBadge = row.satellite === 'H9' ? 'bg-slate-900 text-white' : 'bg-slate-400 text-slate-950';
+
+                html += `
+                    <tr class="hover:bg-slate-50/80 transition-colors">
+                        <td class="px-4 py-3"><span class="text-xs font-bold px-2 py-0.5 rounded-sm ${satBadge}">${row.satellite}</span></td>
+                        <td class="px-4 py-3 font-medium text-slate-900">${row.ad_year} <span class="text-xs text-blue-600 font-normal">(${row.roc_year}年)</span></td>
+                        <td class="px-3 py-3">${row.month}月</td>
+                        <td class="px-4 py-3 text-slate-500 text-xs">${row.date_raw}</td>
+                        <td class="px-3 py-3"><span class="text-xs px-2 py-0.5 rounded-sm ${row.date_type === '期間' ? 'bg-purple-50 text-purple-700 border border-purple-100' : 'bg-slate-100 text-slate-600'}">${row.date_type}</span></td>
+                        <td class="px-4 py-3">${displayTime}</td>
+                        <td class="px-2 py-3 text-center ${fdStyle}">${row.fd}</td>
+                        <td class="px-2 py-3 text-center ${regStyle}">${row.reg}</td>
+                        <td class="px-5 py-3 font-medium text-slate-800">${row.event_tw}</td>
+                        <td class="px-4 py-3 text-xs text-slate-400">${row.memo || '—'}</td>
+                    </tr>`;
+            });
+            document.getElementById('data-table-body').innerHTML = html;
+        }
+    </script>
+</body>
+</html>
