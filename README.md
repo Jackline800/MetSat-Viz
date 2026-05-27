@@ -12,15 +12,15 @@
 
 ### 1. 🌍 全球氣象衛星軌道分佈圖 (SAT_PRO)
 <span style="font-size: 16px;">視覺化呈現同步軌道 (GEO) 與繞極軌道 (LEO) 配置。</span><br>
-<a href="https://jackline800.github.io/MetSat-Viz/SAT_PRO/index.html" style="font-size: 16px; font-weight: bold; color: #0969da;">👉 點此觀看系統 (連結)</a>
+<span style="font-size: 16px; font-weight: bold;"><a href="https://jackline800.github.io/MetSat-Viz/SAT_PRO/index.html">👉 點此觀看系統 (另開分頁)</a></span>
 
 ### 2. 📊 日韓氣象衛星世代演進 (HimaCOMS)
 <span style="font-size: 16px;">時間軸互動分析，含 Himawari 與 COMS/GK 系列演進。</span><br>
-<a href="https://jackline800.github.io/MetSat-Viz/HimaCOMS/index.html" style="font-size: 16px; font-weight: bold; color: #0969da;">👉 點此觀看時間軸 (連結)</a>
+<span style="font-size: 16px; font-weight: bold;"><a href="https://jackline800.github.io/MetSat-Viz/HimaCOMS/index.html">👉 點此觀看時間軸 (另開分頁)</a></span>
 
 ### 3. 📋 向日葵 8 / 9 號觀測休止履歷監測系統 (Hima_ObsStop)
 <span style="font-size: 16px;">整合雙衛星觀測中斷紀錄，支援自動化每週爬蟲、臺灣地區觀測時差校正（扣除10分鐘延遲）與西元/民國雙曆法連動篩選。</span><br>
-<a href="https://jackline800.github.io/MetSat-Viz/Hima_ObsStop/index.html" style="font-size: 16px; font-weight: bold; color: #0969da;">👉 點此觀看監測面板 (連結)</a>
+<span style="font-size: 16px; font-weight: bold;"><a href="https://jackline800.github.io/MetSat-Viz/Hima_ObsStop/index.html">👉 點此觀看監測面板 (另開分頁)</a></span>
 
 </div>
 
