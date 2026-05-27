@@ -2,7 +2,7 @@
 
 # <span style="font-size: 32px;">🛰️ MetSat-Viz (氣象衛星遙測視覺化)</span>
 
-<span style="font-size: 18px; color: #555;">本專案庫旨在透過直觀、互動式的網頁介面，呈現全球氣象衛星的分佈現況與技術演進。</span>
+<span style="font-size: 18px; color: #555;">透過直觀、互動式的網頁介面，呈現全球氣象衛星的分佈現況與技術演進。</span>
 
 ---
 
