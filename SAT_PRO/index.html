@@ -97,7 +97,7 @@
             <option value="ETOPO1_GMT_small.png">方案三：地形底圖（二）</option>
             <option value="world.topo.bathy.jpg">方案四：Blue_Marble_bathy</option>
 			<option value="City_Light_ETOPO.png">方案五：城市夜間燈光圖</option>
-			<option value="界王星.png">方案六：界王星</option>
+			<option value="界王星_base.png">方案六：界王星</option>
         </select>
         <label style="font-size: 0.75rem; color: #7f8c8d; font-weight: normal;">或手動匯入本地地圖：</label>
         <input type="file" id="map-upload" accept="image/*">
@@ -155,8 +155,11 @@
 
 <script>
     let scene, camera, renderer, globe, controls, isRotating = true, targetIdx = null;
-    let geoRadius = 3.65, leoRadius = 3.25; 
-    const activeSats = new Map(), labelPairs = [];
+	let geoRadius = 3.65, leoRadius = 3.25; 
+	let kingKaiGroup = null;
+
+	const GLOBE_RADIUS = 3;
+	const activeSats = new Map(), labelPairs = [];
 
     // 【載入究極完整數據】：100% 全陣列
     const satDatabase = [
@@ -337,7 +340,10 @@
         controls.minDistance = 4; controls.maxDistance = 25;
 
         const globeMat = new THREE.MeshPhongMaterial({ color: 0x1b4f72, shininess: 15 });
-        globe = new THREE.Mesh(new THREE.SphereGeometry(3, 64, 64), globeMat);
+        globe = new THREE.Mesh(
+			new THREE.SphereGeometry(GLOBE_RADIUS, 64, 64),
+			globeMat
+		);
         scene.add(globe);
 
         const sun = new THREE.DirectionalLight(0xffffff, 1.2); sun.position.set(5, 5, 5); scene.add(sun);
@@ -377,19 +383,178 @@
             }
         });
     }
+	function latLonToVector3(lat, lon, radius) {
+		const phi = (90 - lat) * Math.PI / 180;
+		const theta = (lon + 180) * Math.PI / 180;
 
+		return new THREE.Vector3(
+			-radius * Math.sin(phi) * Math.cos(theta),
+			radius * Math.cos(phi),
+			radius * Math.sin(phi) * Math.sin(theta)
+		);
+	}
+
+	function placeOnGlobe(obj, lat, lon, radius = GLOBE_RADIUS + 0.05, spin = 0) {
+		const pos = latLonToVector3(lat, lon, radius);
+		const normal = pos.clone().normalize();
+
+		obj.position.copy(pos);
+
+		obj.quaternion.setFromUnitVectors(
+			new THREE.Vector3(0, 1, 0),
+			normal
+		);
+
+		obj.rotateY(spin);
+	}
+
+	function clearKingKaiObjects() {
+		if (kingKaiGroup) {
+			globe.remove(kingKaiGroup);
+
+			kingKaiGroup.traverse(obj => {
+				if (obj.geometry) obj.geometry.dispose();
+
+				if (obj.material) {
+					if (Array.isArray(obj.material)) {
+						obj.material.forEach(m => m.dispose());
+					} else {
+						obj.material.dispose();
+					}
+				}
+			});
+
+			kingKaiGroup = null;
+		}
+	}
+
+	function createKingKaiObjects() {
+		clearKingKaiObjects();
+
+		kingKaiGroup = new THREE.Group();
+
+		// 圓頂房子
+		const house = new THREE.Group();
+
+		const domeMat = new THREE.MeshPhongMaterial({ color: 0xd9a45f });
+		const doorMat = new THREE.MeshPhongMaterial({ color: 0x4b4b4b });
+
+		const dome = new THREE.Mesh(
+			new THREE.SphereGeometry(0.35, 32, 16),
+			domeMat
+		);
+		dome.scale.y = 0.65;
+		dome.position.y = 0.18;
+		house.add(dome);
+
+		const base = new THREE.Mesh(
+			new THREE.CylinderGeometry(0.35, 0.35, 0.18, 32),
+			domeMat
+		);
+		base.position.y = 0.05;
+		house.add(base);
+
+		const door = new THREE.Mesh(
+			new THREE.BoxGeometry(0.12, 0.18, 0.03),
+			doorMat
+		);
+		door.position.set(0, 0.08, 0.35);
+		house.add(door);
+
+		placeOnGlobe(house, 35, 20, GLOBE_RADIUS + 0.08, 0);
+		kingKaiGroup.add(house);
+
+		// 小屋
+		const shed = new THREE.Group();
+
+		const shedBody = new THREE.Mesh(
+			new THREE.BoxGeometry(0.35, 0.25, 0.28),
+			new THREE.MeshPhongMaterial({ color: 0xc89b57 })
+		);
+		shedBody.position.y = 0.13;
+		shed.add(shedBody);
+
+		placeOnGlobe(shed, 28, 55, GLOBE_RADIUS + 0.06, 0.5);
+		kingKaiGroup.add(shed);
+
+		// 車子
+		const car = new THREE.Group();
+
+		const carBody = new THREE.Mesh(
+			new THREE.BoxGeometry(0.35, 0.12, 0.18),
+			new THREE.MeshPhongMaterial({ color: 0xd71920 })
+		);
+		carBody.position.y = 0.08;
+		car.add(carBody);
+
+		const carRoof = new THREE.Mesh(
+			new THREE.BoxGeometry(0.18, 0.08, 0.15),
+			new THREE.MeshPhongMaterial({ color: 0xffffff })
+		);
+		carRoof.position.y = 0.18;
+		car.add(carRoof);
+
+		placeOnGlobe(car, 0, 25, GLOBE_RADIUS + 0.08, Math.PI / 2);
+		kingKaiGroup.add(car);
+
+		// 樹木
+		const treePositions = [
+			[35, -40],
+			[20, -90],
+			[15, 100],
+			[-25, -60],
+			[-30, 80],
+			[45, 140]
+		];
+
+		treePositions.forEach(([lat, lon]) => {
+			const tree = createSimpleTree();
+			placeOnGlobe(tree, lat, lon, GLOBE_RADIUS + 0.05, 0);
+			kingKaiGroup.add(tree);
+		});
+
+		globe.add(kingKaiGroup);
+	}
+
+	function createSimpleTree() {
+		const tree = new THREE.Group();
+
+		const trunk = new THREE.Mesh(
+			new THREE.CylinderGeometry(0.035, 0.05, 0.22, 12),
+			new THREE.MeshPhongMaterial({ color: 0x7a4a20 })
+		);
+		trunk.position.y = 0.1;
+		tree.add(trunk);
+
+		const leaf = new THREE.Mesh(
+			new THREE.SphereGeometry(0.18, 16, 16),
+			new THREE.MeshPhongMaterial({ color: 0x2f8f2f })
+		);
+		leaf.position.y = 0.28;
+		tree.add(leaf);
+
+		return tree;
+	}
     function setupMapSelector() {
-        document.getElementById('map-selector').onchange = function(e) {
-            const selectedPath = e.target.value;
-            new THREE.TextureLoader().load(selectedPath, t => { 
-                globe.material.map = t; 
-                globe.material.color.setHex(0xffffff);
-                globe.material.needsUpdate = true; 
-            }, undefined, err => {
-                alert("⚠️ 載入失敗！找不到圖片：" + selectedPath + "\n請確認是否已上傳至同資料夾中。");
-            });
-        };
-    }
+		document.getElementById('map-selector').onchange = function(e) {
+			const selectedPath = e.target.value;
+
+			new THREE.TextureLoader().load(selectedPath, t => { 
+				globe.material.map = t; 
+				globe.material.color.setHex(0xffffff);
+				globe.material.needsUpdate = true;
+
+				if (selectedPath.includes("界王星")) {
+					createKingKaiObjects();
+				} else {
+					clearKingKaiObjects();
+				}
+
+			}, undefined, err => {
+				alert("⚠️ 載入失敗！找不到圖片：" + selectedPath + "\n請確認是否已上傳至同資料夾中。");
+			});
+		};
+	}
 
     // ★ 升級：加入全選與防衝突邏輯 ★
     function buildLibrary() {
