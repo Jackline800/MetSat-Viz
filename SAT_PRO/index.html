@@ -226,7 +226,7 @@
         { cat: "低軌/繞極 (氣象為主)", name: "Meteor-M N2-7", lon: 319, lat: 0, orb: "LEO", color: 0x9b59b6 },
         { cat: "低軌/繞極 (氣象為主)", name: "Meteor-M N2-8", lon: 330, lat: 0, orb: "LEO", color: 0x9b59b6 },
         { cat: "低軌/繞極 (氣象為主)", name: "AOS-HAWCSat", lon: 341, lat: 0, orb: "LEO", color: 0xff9f43 },
-		{ cat: "低軌/繞極 (氣象為主)", name: "GOKU", lon: 341, lat: 0, orb: "LEO", color: 0xff9f43 , icon: "衛星/繞極/GOKU.png" },
+		{ cat: "低軌/繞極 (氣象為主)", name: "GOKU", lon: 341, lat: 0, orb: "LEO", color: 0xff9f43 , icon: "衛星/繞極/GOKU.png",direction: 1 },
 		{ cat: "低軌/繞極 (氣象為主)", name: "PICCOLO", lon: 240, lat: 0, orb: "LEO", color: 0xff9f43 , icon: "衛星/繞極/PICCOLO.png",direction: -1 },
 
         // ====== LEO 低軌/繞極軌道 (環境為主) ====== 
@@ -1030,17 +1030,18 @@
 
         labelPairs.forEach(p => {
             if (p.satData.orb === "LEO") {
-                const speed = 0.4;
-                const angle = time * speed + p.offset;
-                
-                const y = leoRadius * Math.cos(angle);
-                const r_xz = leoRadius * Math.sin(angle);
-                const lonRad = (p.satData.lon || 0) * (Math.PI / 180);
-                
-                const x = -r_xz * Math.cos(lonRad);
-                const z = r_xz * Math.sin(lonRad);
-                p.mesh.position.set(x, y, z);
-            }
+		const speed = 0.4;
+		const direction = p.satData.direction || 1;
+		const angle = time * speed * direction + p.offset;
+
+		const y = leoRadius * Math.cos(angle);
+		const r_xz = leoRadius * Math.sin(angle);
+		const lonRad = (p.satData.lon || 0) * (Math.PI / 180);
+
+		const x = -r_xz * Math.cos(lonRad);
+		const z = r_xz * Math.sin(lonRad);
+		p.mesh.position.set(x, y, z);
+	}
             const worldPos = new THREE.Vector3(); p.mesh.getWorldPosition(worldPos);
             
             const viewerW = getViewerWidth();
