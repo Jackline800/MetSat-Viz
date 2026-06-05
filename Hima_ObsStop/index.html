@@ -57,16 +57,26 @@
                 </div>
 
                 <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full lg:w-auto justify-end">
-                    <div class="sm:text-right">
-                        <span class="block text-sm font-semibold text-slate-700">🕰️ 時間視角切換</span>
-                        <span class="text-xs text-slate-400">臺灣時間會自動扣除 10 分鐘並轉為 LST (UTC+8)</span>
+                    <div class="sm:text-right relative group cursor-help">
+                        <span class="block text-sm font-semibold text-slate-700 flex items-center gap-1.5 justify-end">
+                            🕰️ 時間視角切換
+                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </span>
+                        
+                        <div class="absolute right-0 top-full mt-2 w-72 p-3 bg-slate-800 text-white text-xs rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none text-left leading-relaxed">
+                            <p class="font-bold text-blue-300 mb-1">關於 10 分鐘的時間差：</p>
+                            <p>臺灣氣象署觀測雲圖時間標示為「觀測開始」，而 JMA 日本氣象廳則為「觀測結束」。</p>
+                            <p class="mt-2 border-t border-slate-600 pt-1">本系統「臺灣地區」模式已自動將 UTC 時間扣除 10 分鐘以對齊。</p>
+                            <p class="mt-1 text-slate-400 italic">註：LST = UTC+8</p>
+                        </div>
                     </div>
+                    
                     <div class="inline-flex rounded-md shadow-xs bg-slate-100 p-1 shrink-0 w-full sm:w-auto" role="group">
                         <button id="btn-jma" onclick="switchTimeMode('JMA')" class="w-1/2 sm:w-auto px-4 py-2 text-sm font-medium rounded-md bg-slate-800 text-white shadow-xs cursor-pointer">
-                            日本氣象廳 (JMA UTC)
+                            日本氣象廳 (UTC)
                         </button>
                         <button id="btn-tw" onclick="switchTimeMode('TW')" class="w-1/2 sm:w-auto px-4 py-2 text-sm font-medium rounded-md text-slate-600 hover:text-slate-900 cursor-pointer">
-                            臺灣地區 (CWA LST)
+                            臺灣地區 (UTC-10min)
                         </button>
                     </div>
                 </div>
@@ -195,28 +205,27 @@
 
         function parseAndConvertTime(timeRaw, mode) {
             if (!timeRaw || timeRaw.includes('—') || !timeRaw.includes(':')) return timeRaw;
+            
             let match = timeRaw.match(/(\d{2}):(\d{2})/);
             if (!match) return timeRaw;
             
-            let hrs = parseInt(match[1]);
-            let mins = parseInt(match[2]);
+            let hh = parseInt(match[1]);
+            let mm = parseInt(match[2]);
+            
+            if (mode === 'TW') {
+                let totalMinutes = hh * 60 + mm - 10;
+                if (totalMinutes < 0) totalMinutes += 24 * 60;
+                hh = Math.floor(totalMinutes / 60) % 24;
+                mm = totalMinutes % 60;
+            }
+            
             let pCodeMatch = timeRaw.match(/\((.*?)\)/);
             let pSuffix = pCodeMatch ? ` (${pCodeMatch[1]})` : '';
-
-            if (mode === 'TW') {
-                mins -= 10;
-                if (mins < 0) { mins += 60; hrs -= 1; }
-                hrs += 8;
-                
-                let dayFlag = "";
-                if (hrs >= 24) { hrs -= 24; dayFlag = " <span class='text-xs text-amber-600'>(隔日)</span>"; }
-                else if (hrs < 0) { hrs += 24; dayFlag = " <span class='text-xs text-amber-600'>(前日)</span>"; }
-                
-                let pad = (n) => String(n).padStart(2, '0');
-                return `<b class="text-slate-900">${pad(hrs)}:${pad(mins)}</b> <span class="text-xs text-slate-400">LST</span>${pSuffix}${dayFlag}`;
-            } else {
-                return `<b class="text-slate-900">${match[1]}:${match[2]}</b> <span class="text-xs text-slate-400">UTC</span>${pSuffix}`;
-            }
+            
+            const hhStr = String(hh).padStart(2, '0');
+            const mmStr = String(mm).padStart(2, '0');
+            
+            return `<b class="text-slate-900">${hhStr}:${mmStr}</b> <span class="text-xs text-slate-400">UTC</span>${pSuffix}`;
         }
 
         function switchTimeMode(mode) {
@@ -263,18 +272,15 @@
             document.getElementById('summary-cards').innerHTML = html;
         }
 
-        // 修正後的動態趨勢圖表生成引擎
         function updateTrendChart() {
             const satRecords = ALL_SAT_DATA.filter(item => item.satellite === currentSat);
             let labels = [];
             let datasetMatrix = {};
             let totalLineData = [];
 
-            // 初始化資料分類矩陣
             EVENT_TYPES.forEach(type => datasetMatrix[type] = []);
 
             if (currentYearFilter === 'ALL') {
-                // 情況A：看歷年趨勢 -> X軸顯示各年份 (2015 -> 2026)
                 labels = [...new Set(satRecords.map(item => item.ad_year))].sort((a, b) => a - b);
                 
                 labels.forEach(yr => {
@@ -287,7 +293,6 @@
                     });
                 });
             } else {
-                // 情況B：看特定年份 -> X軸固定顯示 1 ~ 12 月
                 labels = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
                 const selectedYrData = satRecords.filter(d => d.ad_year == currentYearFilter);
                 
@@ -302,7 +307,6 @@
                 }
             }
 
-            // 建立 Chart.js 的資料集配置
             let datasets = EVENT_TYPES.map(type => ({
                 type: 'bar',
                 label: type,
@@ -311,7 +315,6 @@
                 stack: 'Stack0'
             }));
 
-            // 加進總計折線圖
             datasets.push({
                 type: 'line',
                 label: '當期總計次數',
@@ -323,10 +326,8 @@
                 tension: 0.1
             });
 
-            // 銷毀舊圖表防止殘影
             if (myChart) myChart.destroy();
 
-            // 開始繪製新圖表
             const ctx = document.getElementById('trendChart').getContext('2d');
             myChart = new Chart(ctx, {
                 data: { labels: labels, datasets: datasets },
@@ -345,7 +346,6 @@
             });
         }
 
-        // 月份分組手風琴渲染
         function renderAccordionTable() {
             const filteredData = getFilteredData();
             const container = document.getElementById('records-accordion-container');
@@ -409,7 +409,7 @@
                                             <th class="px-4 py-2.5">衛星</th>
                                             <th class="px-4 py-2.5">日期原文</th>
                                             <th class="px-3 py-2.5">類型</th>
-                                            <th class="px-4 py-2.5">觀測休止時間 (${currentMode === 'JMA' ? 'JMA UTC' : 'CWA LST'})</th>
+                                            <th class="px-4 py-2.5">觀測休止時間 (UTC)</th>
                                             <th class="px-2 py-2.5 text-center">F.D.</th>
                                             <th class="px-2 py-2.5 text-center">Reg</th>
                                             <th class="px-5 py-2.5">事件類型 (繁體中文)</th>
