@@ -76,16 +76,21 @@
                             日本氣象廳 (UTC)
                         </button>
                         <button id="btn-tw" onclick="switchTimeMode('TW')" class="w-1/2 sm:w-auto px-4 py-2 text-sm font-medium rounded-md text-slate-600 hover:text-slate-900 cursor-pointer">
-                            臺灣地區 (UTC-10min)
+                            臺灣地區 (UTC)
                         </button>
                     </div>
                 </div>
+            </div>
+
+            <div class="border-t border-slate-100 pt-4 mt-2">
+                <span class="block text-sm font-semibold text-slate-700 mb-3">🔍 篩選休止原因 (可複選)</span>
+                <div id="filter-chips" class="flex flex-wrap gap-2"></div>
             </div>
         </section>
 
         <h2 class="text-lg font-bold text-slate-950 mb-3" id="summary-title">📊 歷史事件統計摘要</h2>
         <section class="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6" id="summary-cards">
-        </section>
+            </section>
 
         <section class="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs mb-8">
             <div class="flex justify-between items-center mb-4">
@@ -107,8 +112,8 @@
             </div>
         </div>
         
-        <div id="records-accordion-container" class="space-y-4 pb-12">
-        </div>
+        <div id="records-accordion-container" class="space-y-4">
+            </div>
     </div>
 
     <script src="data.js"></script>
@@ -124,6 +129,34 @@
         };
 
         const EVENT_TYPES = ['東西軌道控制', '南北軌道控制', '輻射計太陽校正', '衛星例行維護', '衛星檢修作業', '其他'];
+        
+        // 新增：初始化篩選狀態
+        let activeFilters = [...EVENT_TYPES];
+
+        function normalizeRecordKey(row) {
+            return [
+                row.satellite || '',
+                row.ad_year || '',
+                row.month || '',
+                row.date_calc_raw || row.date_raw || '',
+                row.time_raw || '',
+                row.event_jp || row.event_tw || ''
+            ].join('||');
+        }
+
+        function getDedupedAllData() {
+            const seen = new Set();
+            const out = [];
+            (ALL_SAT_DATA || []).forEach(row => {
+                const key = normalizeRecordKey(row);
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    out.push(row);
+                }
+            });
+            return out;
+        }
+
         const EVENT_COLORS = {
             '東西軌道控制': '#3b82f6',   
             '南北軌道控制': '#6366f1',   
@@ -142,6 +175,28 @@
                 document.getElementById('records-accordion-container').innerHTML = `<div class="text-center py-8 text-rose-500 bg-white rounded-xl border border-slate-200">找不到 data.js，請先執行 Python 腳本。</div>`;
             }
         });
+
+        // 新增：渲染篩選標籤
+        function renderFilterChips() {
+            const container = document.getElementById('filter-chips');
+            container.innerHTML = EVENT_TYPES.map(type => {
+                const isActive = activeFilters.includes(type);
+                return `<button onclick="toggleFilter('${type}')" class="px-3 py-1 text-xs font-medium rounded-full border transition-all ${isActive ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-300 hover:border-slate-500'}">${isActive ? '✓ ' : ''}${type}</button>`;
+            }).join('');
+        }
+
+        // 新增：切換篩選狀態
+        function toggleFilter(type) {
+            if (activeFilters.includes(type)) {
+                // 確保至少保留一個選項
+                if (activeFilters.length > 1) {
+                    activeFilters = activeFilters.filter(t => t !== type);
+                }
+            } else {
+                activeFilters.push(type);
+            }
+            refreshUI();
+        }
 
         function switchSatellite(satCode) {
             currentSat = satCode;
@@ -163,7 +218,7 @@
 
         function updateYearDropdown() {
             const select = document.getElementById('year-select');
-            const satRecords = ALL_SAT_DATA.filter(item => item.satellite === currentSat);
+            const satRecords = getDedupedAllData().filter(item => item.satellite === currentSat);
             const uniqueYears = [...new Set(satRecords.map(item => item.ad_year))].sort((a, b) => b - a);
             
             select.innerHTML = '<option value="ALL">全部年份</option>';
@@ -184,14 +239,20 @@
         }
 
         function getFilteredData() {
-            let data = ALL_SAT_DATA.filter(item => item.satellite === currentSat);
+            let data = getDedupedAllData().filter(item => item.satellite === currentSat);
             if (currentYearFilter !== 'ALL') {
                 data = data.filter(item => item.ad_year == currentYearFilter);
             }
+            // 修改：加入原因篩選邏輯
+            data = data.filter(item => {
+                const type = EVENT_TYPES.includes(item.event_tw) ? item.event_tw : '其他';
+                return activeFilters.includes(type);
+            });
             return data;
         }
 
         function refreshUI() {
+            renderFilterChips(); // 新增：每次刷新 UI 都會更新標籤狀態
             renderSummary();
             renderAccordionTable();
             updateTrendChart(); 
@@ -247,11 +308,10 @@
             const filteredData = getFilteredData();
             const counts = { '東西軌道控制': 0, '南北軌道控制': 0, '輻射計太陽校正': 0, '衛星例行維護': 0, '衛星檢修作業': 0, '其他': 0 };
             
-            // 使用 event_count 實際天數進行加總
             filteredData.forEach(d => {
-                const count = d.event_count || 1;
-                if (counts[d.event_tw] !== undefined) counts[d.event_tw] += count;
-                else counts['其他'] += count;
+                const n = Number(d.event_count || 1);
+                if (counts[d.event_tw] !== undefined) counts[d.event_tw] += n;
+                else counts['其他'] += n;
             });
 
             const colors = {
@@ -275,7 +335,8 @@
         }
 
         function updateTrendChart() {
-            const satRecords = ALL_SAT_DATA.filter(item => item.satellite === currentSat);
+            // 注意：圖表的基礎資料仍然需要取得不含「原因篩選」的全年資料，以確保座標軸與總計次數正確
+            const satRecords = getDedupedAllData().filter(item => item.satellite === currentSat);
             let labels = [];
             let datasetMatrix = {};
             let totalLineData = [];
@@ -287,13 +348,23 @@
                 
                 labels.forEach(yr => {
                     const yrData = satRecords.filter(d => d.ad_year === yr);
-                    totalLineData.push(yrData.reduce((sum, d) => sum + (d.event_count || 1), 0));
+                    
+                    // 修改：折線圖的總次數也只計算目前有勾選的原因
+                    totalLineData.push(yrData.filter(d => {
+                        const type = EVENT_TYPES.includes(d.event_tw) ? d.event_tw : '其他';
+                        return activeFilters.includes(type);
+                    }).reduce((sum, d) => sum + Number(d.event_count || 1), 0));
                     
                     EVENT_TYPES.forEach(type => {
-                        const count = yrData
-                            .filter(d => d.event_tw === type || (type === '其他' && !EVENT_TYPES.includes(d.event_tw)))
-                            .reduce((sum, d) => sum + (d.event_count || 1), 0);
-                        datasetMatrix[type].push(count);
+                        // 修改：如果該類型未被選中，則圖表數值填入 0
+                        if (!activeFilters.includes(type)) {
+                            datasetMatrix[type].push(0);
+                        } else {
+                            const count = yrData
+                                .filter(d => d.event_tw === type || (type === '其他' && !EVENT_TYPES.includes(d.event_tw)))
+                                .reduce((sum, d) => sum + Number(d.event_count || 1), 0);
+                            datasetMatrix[type].push(count);
+                        }
                     });
                 });
             } else {
@@ -302,13 +373,23 @@
                 
                 for (let m = 1; m <= 12; m++) {
                     const monthData = selectedYrData.filter(d => d.month === m);
-                    totalLineData.push(monthData.reduce((sum, d) => sum + (d.event_count || 1), 0));
+                    
+                    // 修改：折線圖的總次數也只計算目前有勾選的原因
+                    totalLineData.push(monthData.filter(d => {
+                        const type = EVENT_TYPES.includes(d.event_tw) ? d.event_tw : '其他';
+                        return activeFilters.includes(type);
+                    }).reduce((sum, d) => sum + Number(d.event_count || 1), 0));
                     
                     EVENT_TYPES.forEach(type => {
-                        const count = monthData
-                            .filter(d => d.event_tw === type || (type === '其他' && !EVENT_TYPES.includes(d.event_tw)))
-                            .reduce((sum, d) => sum + (d.event_count || 1), 0);
-                        datasetMatrix[type].push(count);
+                        // 修改：如果該類型未被選中，則圖表數值填入 0
+                        if (!activeFilters.includes(type)) {
+                            datasetMatrix[type].push(0);
+                        } else {
+                            const count = monthData
+                                .filter(d => d.event_tw === type || (type === '其他' && !EVENT_TYPES.includes(d.event_tw)))
+                                .reduce((sum, d) => sum + Number(d.event_count || 1), 0);
+                            datasetMatrix[type].push(count);
+                        }
                     });
                 }
             }
@@ -357,7 +438,7 @@
             const container = document.getElementById('records-accordion-container');
             
             if (filteredData.length === 0) {
-                container.innerHTML = `<div class="text-center py-8 text-slate-400 bg-white rounded-xl border border-slate-200">查無此年份的觀測休止紀錄。</div>`;
+                container.innerHTML = `<div class="text-center py-8 text-slate-400 bg-white rounded-xl border border-slate-200">查無對應觀測休止紀錄。</div>`;
                 return;
             }
 
@@ -385,7 +466,7 @@
             let html = '';
             sortedKeys.forEach((key, index) => {
                 const group = grouped[key];
-                const totalEvents = group.list.reduce((sum, d) => sum + (d.event_count || 1), 0);
+                const totalEvents = group.list.reduce((sum, d) => sum + Number(d.event_count || 1), 0);
                 
                 const isExpanded = index === 0; 
                 const contentStyle = isExpanded ? 'block' : 'hidden';
@@ -399,7 +480,7 @@
                                     📅 ${group.year}年 (${group.roc_year}年) — ${group.month}月份
                                 </span>
                                 <span class="text-xs font-normal text-slate-400">
-                                    本月共發生 <b class="text-slate-700 font-bold">${totalEvents}</b> 次觀測休止事件
+                                    篩選後共 <b class="text-slate-700 font-bold">${totalEvents}</b> 次紀錄
                                 </span>
                             </div>
                             <svg id="arrow-${index}" class="w-5 h-5 text-slate-400 transition-transform duration-200 ${arrowStyle}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -419,6 +500,8 @@
                                             <th class="px-2 py-2.5 text-center">F.D.</th>
                                             <th class="px-2 py-2.5 text-center">Reg</th>
                                             <th class="px-5 py-2.5">事件類型 (繁體中文)</th>
+                                            <th class="px-3 py-2.5 text-center">統計次數</th>
+                                            <th class="px-4 py-2.5">排除日</th>
                                             <th class="px-4 py-2.5">原因/備註</th>
                                         </tr>
                                     </thead>
@@ -430,26 +513,17 @@
                     const regStyle = row.reg === 'X' ? 'text-rose-600 font-bold bg-rose-50/60' : 'text-emerald-600';
                     const satBadge = row.satellite === 'H9' ? 'bg-slate-900 text-white' : 'bg-slate-400 text-slate-950';
 
-                    // 處理並顯示「除外」標籤
-                    const excludeHtml = (row.exclude_dates && row.exclude_dates.length > 0) 
-                        ? `<span class="block mt-1 text-[11px] font-bold text-rose-500 bg-rose-50 px-1 py-0.5 rounded-sm w-max">除外: ${row.exclude_dates.join(', ')} 日</span>` 
-                        : '';
-
                     html += `
                                         <tr class="hover:bg-slate-50/50 transition-colors">
                                             <td class="px-4 py-3"><span class="text-xs font-bold px-2 py-0.5 rounded-sm ${satBadge}">${row.satellite}</span></td>
-                                            <td class="px-4 py-3 text-slate-500 text-xs font-mono">
-                                                ${row.date_raw}
-                                            </td>
-                                            <td class="px-3 py-3">
-                                                <span class="text-xs px-2 py-0.5 rounded-sm ${row.date_type === '期間' ? 'bg-purple-50 text-purple-700' : 'bg-slate-100 text-slate-600'}">${row.date_type}</span>
-                                                <span class="block mt-1 text-[10px] text-slate-400 whitespace-nowrap">共 ${row.event_count || 1} 天</span>
-                                                ${excludeHtml}
-                                            </td>
+                                            <td class="px-4 py-3 text-slate-500 text-xs font-mono">${row.date_raw}${row.date_calc_raw && row.date_calc_raw !== row.date_raw ? `<br><span class="text-[10px] text-slate-400">計算: ${row.date_calc_raw}</span>` : ""}</td>
+                                            <td class="px-3 py-3"><span class="text-xs px-2 py-0.5 rounded-sm ${row.date_type === '期間' ? 'bg-purple-50 text-purple-700' : 'bg-slate-100 text-slate-600'}">${row.date_type}</span></td>
                                             <td class="px-4 py-3">${displayTime}</td>
                                             <td class="px-2 py-3 text-center ${fdStyle}">${row.fd}</td>
                                             <td class="px-2 py-3 text-center ${regStyle}">${row.reg}</td>
                                             <td class="px-5 py-3 font-medium text-slate-800">${row.event_tw}</td>
+                                            <td class="px-3 py-3 text-center text-slate-700 font-semibold">${Number(row.event_count || 1)}</td>
+                                            <td class="px-4 py-3 text-xs text-rose-500">${Array.isArray(row.excluded_dates) && row.excluded_dates.length ? row.excluded_dates.join('、') + '日' : '—'}</td>
                                             <td class="px-4 py-3 text-xs text-slate-400">${row.memo || '—'}</td>
                                         </tr>`;
                 });
