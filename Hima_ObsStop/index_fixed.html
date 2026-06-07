@@ -76,7 +76,7 @@
                             日本氣象廳 (UTC)
                         </button>
                         <button id="btn-tw" onclick="switchTimeMode('TW')" class="w-1/2 sm:w-auto px-4 py-2 text-sm font-medium rounded-md text-slate-600 hover:text-slate-900 cursor-pointer">
-                            臺灣地區 (UTC)
+                            臺灣地區 (UTC-10min)
                         </button>
                     </div>
                 </div>
@@ -124,31 +124,6 @@
         };
 
         const EVENT_TYPES = ['東西軌道控制', '南北軌道控制', '輻射計太陽校正', '衛星例行維護', '衛星檢修作業', '其他'];
-
-        function normalizeRecordKey(row) {
-            return [
-                row.satellite || '',
-                row.ad_year || '',
-                row.month || '',
-                row.date_calc_raw || row.date_raw || '',
-                row.time_raw || '',
-                row.event_jp || row.event_tw || ''
-            ].join('||');
-        }
-
-        function getDedupedAllData() {
-            const seen = new Set();
-            const out = [];
-            (ALL_SAT_DATA || []).forEach(row => {
-                const key = normalizeRecordKey(row);
-                if (!seen.has(key)) {
-                    seen.add(key);
-                    out.push(row);
-                }
-            });
-            return out;
-        }
-
         const EVENT_COLORS = {
             '東西軌道控制': '#3b82f6',   
             '南北軌道控制': '#6366f1',   
@@ -188,7 +163,7 @@
 
         function updateYearDropdown() {
             const select = document.getElementById('year-select');
-            const satRecords = getDedupedAllData().filter(item => item.satellite === currentSat);
+            const satRecords = ALL_SAT_DATA.filter(item => item.satellite === currentSat);
             const uniqueYears = [...new Set(satRecords.map(item => item.ad_year))].sort((a, b) => b - a);
             
             select.innerHTML = '<option value="ALL">全部年份</option>';
@@ -209,7 +184,7 @@
         }
 
         function getFilteredData() {
-            let data = getDedupedAllData().filter(item => item.satellite === currentSat);
+            let data = ALL_SAT_DATA.filter(item => item.satellite === currentSat);
             if (currentYearFilter !== 'ALL') {
                 data = data.filter(item => item.ad_year == currentYearFilter);
             }
@@ -299,7 +274,7 @@
         }
 
         function updateTrendChart() {
-            const satRecords = getDedupedAllData().filter(item => item.satellite === currentSat);
+            const satRecords = ALL_SAT_DATA.filter(item => item.satellite === currentSat);
             let labels = [];
             let datasetMatrix = {};
             let totalLineData = [];
@@ -409,7 +384,7 @@
             let html = '';
             sortedKeys.forEach((key, index) => {
                 const group = grouped[key];
-                const totalEvents = group.list.reduce((sum, d) => sum + Number(d.event_count || 1), 0);
+                const totalEvents = group.list.length;
                 
                 const isExpanded = index === 0; 
                 const contentStyle = isExpanded ? 'block' : 'hidden';
@@ -443,8 +418,6 @@
                                             <th class="px-2 py-2.5 text-center">F.D.</th>
                                             <th class="px-2 py-2.5 text-center">Reg</th>
                                             <th class="px-5 py-2.5">事件類型 (繁體中文)</th>
-                                            <th class="px-3 py-2.5 text-center">統計次數</th>
-                                            <th class="px-4 py-2.5">排除日</th>
                                             <th class="px-4 py-2.5">原因/備註</th>
                                         </tr>
                                     </thead>
@@ -459,14 +432,12 @@
                     html += `
                                         <tr class="hover:bg-slate-50/50 transition-colors">
                                             <td class="px-4 py-3"><span class="text-xs font-bold px-2 py-0.5 rounded-sm ${satBadge}">${row.satellite}</span></td>
-                                            <td class="px-4 py-3 text-slate-500 text-xs font-mono">${row.date_raw}${row.date_calc_raw && row.date_calc_raw !== row.date_raw ? `<br><span class="text-[10px] text-slate-400">計算: ${row.date_calc_raw}</span>` : ""}</td>
+                                            <td class="px-4 py-3 text-slate-500 text-xs font-mono">${row.date_raw}</td>
                                             <td class="px-3 py-3"><span class="text-xs px-2 py-0.5 rounded-sm ${row.date_type === '期間' ? 'bg-purple-50 text-purple-700' : 'bg-slate-100 text-slate-600'}">${row.date_type}</span></td>
                                             <td class="px-4 py-3">${displayTime}</td>
                                             <td class="px-2 py-3 text-center ${fdStyle}">${row.fd}</td>
                                             <td class="px-2 py-3 text-center ${regStyle}">${row.reg}</td>
                                             <td class="px-5 py-3 font-medium text-slate-800">${row.event_tw}</td>
-                                            <td class="px-3 py-3 text-center text-slate-700 font-semibold">${Number(row.event_count || 1)}</td>
-                                            <td class="px-4 py-3 text-xs text-rose-500">${Array.isArray(row.excluded_dates) && row.excluded_dates.length ? row.excluded_dates.join('、') + '日' : '—'}</td>
                                             <td class="px-4 py-3 text-xs text-slate-400">${row.memo || '—'}</td>
                                         </tr>`;
                 });

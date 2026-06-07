@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>向日葵8/9號氣象衛星觀測休止履歷監測面板</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
     </style>
@@ -29,7 +30,6 @@
         </header>
 
         <section class="bg-white p-4 rounded-xl shadow-xs border border-slate-200 mb-6 flex flex-col gap-6">
-            
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100 pb-2 gap-4">
                 <div>
                     <span class="block text-sm font-semibold text-slate-700">📡 選擇觀測衛星</span>
@@ -57,16 +57,26 @@
                 </div>
 
                 <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full lg:w-auto justify-end">
-                    <div class="sm:text-right">
-                        <span class="block text-sm font-semibold text-slate-700">🕰️ 時間視角切換</span>
-                        <span class="text-xs text-slate-400">臺灣時間會自動扣除 10 分鐘並轉為 LST (UTC+8)</span>
+                    <div class="sm:text-right relative group cursor-help">
+                        <span class="block text-sm font-semibold text-slate-700 flex items-center gap-1.5 justify-end">
+                            🕰️ 時間視角切換
+                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </span>
+                        
+                        <div class="absolute right-0 top-full mt-2 w-72 p-3 bg-slate-800 text-white text-xs rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none text-left leading-relaxed">
+                            <p class="font-bold text-blue-300 mb-1">關於 10 分鐘的時間差：</p>
+                            <p>臺灣氣象署觀測雲圖時間標示為「觀測開始」，而 JMA 日本氣象廳則為「觀測結束」。</p>
+                            <p class="mt-2 border-t border-slate-600 pt-1">本系統「臺灣地區」模式已自動將 UTC 時間扣除 10 分鐘以對齊。</p>
+                            <p class="mt-1 text-slate-400 italic">註：LST = UTC+8</p>
+                        </div>
                     </div>
+                    
                     <div class="inline-flex rounded-md shadow-xs bg-slate-100 p-1 shrink-0 w-full sm:w-auto" role="group">
                         <button id="btn-jma" onclick="switchTimeMode('JMA')" class="w-1/2 sm:w-auto px-4 py-2 text-sm font-medium rounded-md bg-slate-800 text-white shadow-xs cursor-pointer">
-                            日本氣象廳 (JMA UTC)
+                            日本氣象廳 (UTC)
                         </button>
                         <button id="btn-tw" onclick="switchTimeMode('TW')" class="w-1/2 sm:w-auto px-4 py-2 text-sm font-medium rounded-md text-slate-600 hover:text-slate-900 cursor-pointer">
-                            臺灣地區 (CWA LST)
+                            臺灣地區 (UTC-10min)
                         </button>
                     </div>
                 </div>
@@ -74,8 +84,20 @@
         </section>
 
         <h2 class="text-lg font-bold text-slate-950 mb-3" id="summary-title">📊 歷史事件統計摘要</h2>
-        <section class="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8" id="summary-cards">
-            </section>
+        <section class="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6" id="summary-cards">
+        </section>
+
+        <section class="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs mb-8">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-md font-bold text-slate-900 flex items-center gap-1.5">
+                    📈 <span id="chart-dynamic-title">觀測休止時序變化趨勢</span>
+                </h3>
+                <span class="text-xs text-slate-400">長條疊加：分類事件次數 | 折線：當期總計次數</span>
+            </div>
+            <div class="w-full relative" style="height: 320px;">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </section>
 
         <div class="flex justify-between items-center mb-3">
             <h2 class="text-lg font-bold text-slate-950" id="table-title">📋 觀測休止完整紀錄</h2>
@@ -85,8 +107,8 @@
             </div>
         </div>
         
-        <div id="records-accordion-container" class="space-y-4">
-            </div>
+        <div id="records-accordion-container" class="space-y-4 pb-12">
+        </div>
     </div>
 
     <script src="data.js"></script>
@@ -94,10 +116,21 @@
         let currentSat = 'H9'; 
         let currentMode = 'JMA'; 
         let currentYearFilter = 'ALL'; 
+        let myChart = null; 
 
         const JMA_URLS = {
             'H9': 'https://www.data.jma.go.jp/mscweb/ja/oper/opr_pause_H9.html',
             'H8': 'https://www.data.jma.go.jp/mscweb/ja/oper/opr_pause_H8.html'
+        };
+
+        const EVENT_TYPES = ['東西軌道控制', '南北軌道控制', '輻射計太陽校正', '衛星例行維護', '衛星檢修作業', '其他'];
+        const EVENT_COLORS = {
+            '東西軌道控制': '#3b82f6',   
+            '南北軌道控制': '#6366f1',   
+            '輻射計太陽校正': '#f59e0b', 
+            '衛星例行維護': '#10b981',   
+            '衛星檢修作業': '#a855f7',   
+            '其他': '#94a3b8'            
         };
 
         document.addEventListener("DOMContentLoaded", () => {
@@ -161,37 +194,38 @@
         function refreshUI() {
             renderSummary();
             renderAccordionTable();
+            updateTrendChart(); 
             
             const nameMap = {'H8': '向日葵8號', 'H9': '向日葵9號'};
             const yearText = currentYearFilter === 'ALL' ? '歷年' : `${currentYearFilter}年`;
             document.getElementById('summary-title').innerText = `📊 ${nameMap[currentSat]} ${yearText} 事件統計摘要`;
             document.getElementById('table-title').innerText = `📋 ${nameMap[currentSat]} ${yearText} 觀測休止完整紀錄`;
+            document.getElementById('chart-dynamic-title').innerText = `${nameMap[currentSat]} ${yearText} 觀測休止趨勢圖分佈`;
         }
 
         function parseAndConvertTime(timeRaw, mode) {
             if (!timeRaw || timeRaw.includes('—') || !timeRaw.includes(':')) return timeRaw;
+            
             let match = timeRaw.match(/(\d{2}):(\d{2})/);
             if (!match) return timeRaw;
             
-            let hrs = parseInt(match[1]);
-            let mins = parseInt(match[2]);
+            let hh = parseInt(match[1]);
+            let mm = parseInt(match[2]);
+            
+            if (mode === 'TW') {
+                let totalMinutes = hh * 60 + mm - 10;
+                if (totalMinutes < 0) totalMinutes += 24 * 60;
+                hh = Math.floor(totalMinutes / 60) % 24;
+                mm = totalMinutes % 60;
+            }
+            
             let pCodeMatch = timeRaw.match(/\((.*?)\)/);
             let pSuffix = pCodeMatch ? ` (${pCodeMatch[1]})` : '';
-
-            if (mode === 'TW') {
-                mins -= 10;
-                if (mins < 0) { mins += 60; hrs -= 1; }
-                hrs += 8;
-                
-                let dayFlag = "";
-                if (hrs >= 24) { hrs -= 24; dayFlag = " <span class='text-xs text-amber-600'>(隔日)</span>"; }
-                else if (hrs < 0) { hrs += 24; dayFlag = " <span class='text-xs text-amber-600'>(前日)</span>"; }
-                
-                let pad = (n) => String(n).padStart(2, '0');
-                return `<b class="text-slate-900">${pad(hrs)}:${pad(mins)}</b> <span class="text-xs text-slate-400">LST</span>${pSuffix}${dayFlag}`;
-            } else {
-                return `<b class="text-slate-900">${match[1]}:${match[2]}</b> <span class="text-xs text-slate-400">UTC</span>${pSuffix}`;
-            }
+            
+            const hhStr = String(hh).padStart(2, '0');
+            const mmStr = String(mm).padStart(2, '0');
+            
+            return `<b class="text-slate-900">${hhStr}:${mmStr}</b> <span class="text-xs text-slate-400">UTC</span>${pSuffix}`;
         }
 
         function switchTimeMode(mode) {
@@ -213,9 +247,11 @@
             const filteredData = getFilteredData();
             const counts = { '東西軌道控制': 0, '南北軌道控制': 0, '輻射計太陽校正': 0, '衛星例行維護': 0, '衛星檢修作業': 0, '其他': 0 };
             
+            // 使用 event_count 實際天數進行加總
             filteredData.forEach(d => {
-                if (counts[d.event_tw] !== undefined) counts[d.event_tw]++;
-                else counts['其他']++;
+                const count = d.event_count || 1;
+                if (counts[d.event_tw] !== undefined) counts[d.event_tw] += count;
+                else counts['其他'] += count;
             });
 
             const colors = {
@@ -238,7 +274,84 @@
             document.getElementById('summary-cards').innerHTML = html;
         }
 
-        // 修正後的月份分組手風琴渲染邏輯
+        function updateTrendChart() {
+            const satRecords = ALL_SAT_DATA.filter(item => item.satellite === currentSat);
+            let labels = [];
+            let datasetMatrix = {};
+            let totalLineData = [];
+
+            EVENT_TYPES.forEach(type => datasetMatrix[type] = []);
+
+            if (currentYearFilter === 'ALL') {
+                labels = [...new Set(satRecords.map(item => item.ad_year))].sort((a, b) => a - b);
+                
+                labels.forEach(yr => {
+                    const yrData = satRecords.filter(d => d.ad_year === yr);
+                    totalLineData.push(yrData.reduce((sum, d) => sum + (d.event_count || 1), 0));
+                    
+                    EVENT_TYPES.forEach(type => {
+                        const count = yrData
+                            .filter(d => d.event_tw === type || (type === '其他' && !EVENT_TYPES.includes(d.event_tw)))
+                            .reduce((sum, d) => sum + (d.event_count || 1), 0);
+                        datasetMatrix[type].push(count);
+                    });
+                });
+            } else {
+                labels = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+                const selectedYrData = satRecords.filter(d => d.ad_year == currentYearFilter);
+                
+                for (let m = 1; m <= 12; m++) {
+                    const monthData = selectedYrData.filter(d => d.month === m);
+                    totalLineData.push(monthData.reduce((sum, d) => sum + (d.event_count || 1), 0));
+                    
+                    EVENT_TYPES.forEach(type => {
+                        const count = monthData
+                            .filter(d => d.event_tw === type || (type === '其他' && !EVENT_TYPES.includes(d.event_tw)))
+                            .reduce((sum, d) => sum + (d.event_count || 1), 0);
+                        datasetMatrix[type].push(count);
+                    });
+                }
+            }
+
+            let datasets = EVENT_TYPES.map(type => ({
+                type: 'bar',
+                label: type,
+                data: datasetMatrix[type],
+                backgroundColor: EVENT_COLORS[type],
+                stack: 'Stack0'
+            }));
+
+            datasets.push({
+                type: 'line',
+                label: '當期總計次數',
+                data: totalLineData,
+                borderColor: '#ef4444', 
+                borderWidth: 2,
+                pointBackgroundColor: '#ef4444',
+                fill: false,
+                tension: 0.1
+            });
+
+            if (myChart) myChart.destroy();
+
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            myChart = new Chart(ctx, {
+                data: { labels: labels, datasets: datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+                        tooltip: { mode: 'index', intersect: false }
+                    },
+                    scales: {
+                        x: { stacked: true, grid: { display: false } },
+                        y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } }
+                    }
+                }
+            });
+        }
+
         function renderAccordionTable() {
             const filteredData = getFilteredData();
             const container = document.getElementById('records-accordion-container');
@@ -248,7 +361,6 @@
                 return;
             }
 
-            // 按「年-月」進行分組
             const grouped = {};
             filteredData.forEach(item => {
                 const groupKey = `${item.ad_year}年 ${item.month}月`;
@@ -260,10 +372,9 @@
                         list: []
                     };
                 }
-                grouped[groupKey].list.push(item); // 🔥 這裡已修正為正確的 .push() 語法！
+                grouped[groupKey].list.push(item);
             });
 
-            // 分組時間排序（新到舊）
             const sortedKeys = Object.keys(grouped).sort((a, b) => {
                 const groupA = grouped[a];
                 const groupB = grouped[b];
@@ -274,9 +385,8 @@
             let html = '';
             sortedKeys.forEach((key, index) => {
                 const group = grouped[key];
-                const totalEvents = group.list.length;
+                const totalEvents = group.list.reduce((sum, d) => sum + (d.event_count || 1), 0);
                 
-                // 預設將最新的一個月份展開，其餘月份自動收合
                 const isExpanded = index === 0; 
                 const contentStyle = isExpanded ? 'block' : 'hidden';
                 const arrowStyle = isExpanded ? 'transform rotate-180' : '';
@@ -305,7 +415,7 @@
                                             <th class="px-4 py-2.5">衛星</th>
                                             <th class="px-4 py-2.5">日期原文</th>
                                             <th class="px-3 py-2.5">類型</th>
-                                            <th class="px-4 py-2.5">觀測休止時間 (${currentMode === 'JMA' ? 'JMA UTC' : 'CWA LST'})</th>
+                                            <th class="px-4 py-2.5">觀測休止時間 (UTC)</th>
                                             <th class="px-2 py-2.5 text-center">F.D.</th>
                                             <th class="px-2 py-2.5 text-center">Reg</th>
                                             <th class="px-5 py-2.5">事件類型 (繁體中文)</th>
@@ -320,11 +430,22 @@
                     const regStyle = row.reg === 'X' ? 'text-rose-600 font-bold bg-rose-50/60' : 'text-emerald-600';
                     const satBadge = row.satellite === 'H9' ? 'bg-slate-900 text-white' : 'bg-slate-400 text-slate-950';
 
+                    // 處理並顯示「除外」標籤
+                    const excludeHtml = (row.exclude_dates && row.exclude_dates.length > 0) 
+                        ? `<span class="block mt-1 text-[11px] font-bold text-rose-500 bg-rose-50 px-1 py-0.5 rounded-sm w-max">除外: ${row.exclude_dates.join(', ')} 日</span>` 
+                        : '';
+
                     html += `
                                         <tr class="hover:bg-slate-50/50 transition-colors">
                                             <td class="px-4 py-3"><span class="text-xs font-bold px-2 py-0.5 rounded-sm ${satBadge}">${row.satellite}</span></td>
-                                            <td class="px-4 py-3 text-slate-500 text-xs font-mono">${row.date_raw}</td>
-                                            <td class="px-3 py-3"><span class="text-xs px-2 py-0.5 rounded-sm ${row.date_type === '期間' ? 'bg-purple-50 text-purple-700' : 'bg-slate-100 text-slate-600'}">${row.date_type}</span></td>
+                                            <td class="px-4 py-3 text-slate-500 text-xs font-mono">
+                                                ${row.date_raw}
+                                            </td>
+                                            <td class="px-3 py-3">
+                                                <span class="text-xs px-2 py-0.5 rounded-sm ${row.date_type === '期間' ? 'bg-purple-50 text-purple-700' : 'bg-slate-100 text-slate-600'}">${row.date_type}</span>
+                                                <span class="block mt-1 text-[10px] text-slate-400 whitespace-nowrap">共 ${row.event_count || 1} 天</span>
+                                                ${excludeHtml}
+                                            </td>
                                             <td class="px-4 py-3">${displayTime}</td>
                                             <td class="px-2 py-3 text-center ${fdStyle}">${row.fd}</td>
                                             <td class="px-2 py-3 text-center ${regStyle}">${row.reg}</td>
