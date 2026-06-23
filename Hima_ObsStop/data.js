@@ -6,6 +6,29 @@ const ALL_SAT_DATA = [
     "reiwa_year": "令和8年",
     "era_year": "令和8年",
     "month": 6,
+    "date_raw": "6月22日",
+    "date_calc_raw": "6月22日",
+    "date_type": "單日",
+    "event_count": 1,
+    "affected_dates": [
+      22
+    ],
+    "excluded_dates": [],
+    "time_raw": "20:50 UTC(P125)",
+    "p_code": "P125",
+    "fd": "X",
+    "reg": "O",
+    "event_jp": "放射計太陽校正",
+    "event_tw": "輻射計太陽校正",
+    "memo": ""
+  },
+  {
+    "satellite": "H9",
+    "ad_year": 2026,
+    "roc_year": 115,
+    "reiwa_year": "令和8年",
+    "era_year": "令和8年",
+    "month": 6,
     "date_raw": "6月19日",
     "date_calc_raw": "6月19日",
     "date_type": "單日",
@@ -167,10 +190,10 @@ const ALL_SAT_DATA = [
     "reiwa_year": "令和8年",
     "era_year": "令和8年",
     "month": 6,
-    "date_raw": "6月1日～21日",
-    "date_calc_raw": "6月1日～21日",
+    "date_raw": "6月1日～28日",
+    "date_calc_raw": "6月1日～28日",
     "date_type": "期間",
-    "event_count": 21,
+    "event_count": 28,
     "affected_dates": [
       1,
       2,
@@ -192,7 +215,14 @@ const ALL_SAT_DATA = [
       18,
       19,
       20,
-      21
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28
     ],
     "excluded_dates": [],
     "time_raw": "02:50 UTC(P017)",
@@ -12905,10 +12935,10 @@ const ALL_SAT_DATA = [
     "reiwa_year": "令和8年",
     "era_year": "令和8年",
     "month": 6,
-    "date_raw": "6月1日～21日 1日を除く",
-    "date_calc_raw": "6月1日～21日 1日を除く",
+    "date_raw": "6月1日～28日 1日を除く",
+    "date_calc_raw": "6月1日～28日 1日を除く",
     "date_type": "期間",
-    "event_count": 20,
+    "event_count": 27,
     "affected_dates": [
       2,
       3,
@@ -12929,7 +12959,14 @@ const ALL_SAT_DATA = [
       18,
       19,
       20,
-      21
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28
     ],
     "excluded_dates": [
       1
@@ -40412,4 +40449,4 @@ const ALL_SAT_DATA = [
     "memo": ""
   }
 ];
-const LAST_UPDATED = '2026-06-17 11:14:38';
+const LAST_UPDATED = '2026-06-22 16:15:00';
