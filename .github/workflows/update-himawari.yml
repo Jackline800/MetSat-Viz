@@ -1,0 +1,76 @@
+name: Update Himawari observation pause data
+
+on:
+  # 可在 Actions 頁面手動執行
+  workflow_dispatch:
+
+  # 每天臺灣時間 09:17 執行
+  schedule:
+    - cron: "17 9 * * *"
+      timezone: "Asia/Taipei"
+
+concurrency:
+  group: update-himawari-observation-pause
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  update-data:
+    name: Update Hima_ObsStop data
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      TZ: Asia/Taipei
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAGES_PUSH_TOKEN }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install requests beautifulsoup4
+
+      - name: Run parser self-test
+        run: |
+          python Hima_ObsStop/update_data_stable.py --self-test
+
+      - name: Update observation pause data
+        run: |
+          python Hima_ObsStop/update_data_stable.py
+
+      - name: Confirm output file
+        run: |
+          test -f Hima_ObsStop/data.js
+          echo "data.js size:"
+          wc -c Hima_ObsStop/data.js
+
+      - name: Commit and push data.js
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add Hima_ObsStop/data.js
+
+          if git diff --cached --quiet; then
+            echo "Hima_ObsStop/data.js 沒有變更。"
+            exit 0
+          fi
+
+          git commit -m "chore: update Himawari observation pause data"
+
+          # 降低排程執行期間 main 分支剛好有其他更新所造成的 push 衝突
+          git pull --rebase origin main
+          git push origin HEAD:main
