@@ -703,38 +703,42 @@ def validate_regression_records(records):
         and r.get("p_code") == "P089"
         and r.get("event_jp") == "衛星メンテナンス"
     ]
+
     if not targets:
         raise RuntimeError(
-            "解析失敗：H9 2026/06 的 14:50 UTC(P089) 衛星維護紀錄仍不存在，已停止覆寫 data.js。"
+            "解析失敗：H9 2026/06 的 14:50 UTC(P089) "
+            "衛星維護紀錄仍不存在，已停止覆寫 data.js。"
         )
 
-expected_excluded = [1, 29]
+    expected_excluded = [1, 29]
 
-valid_targets = [
-    row for row in targets
-    if row.get("excluded_dates") == expected_excluded
-    and int(row.get("event_count") or 0) == 28
-]
+    valid_targets = [
+        row for row in targets
+        if row.get("excluded_dates") == expected_excluded
+        and int(row.get("event_count") or 0) == 28
+    ]
 
-if not valid_targets:
-    details = "; ".join(
-        f"date={row.get('date_raw')}, "
-        f"excluded={row.get('excluded_dates')}, "
-        f"count={row.get('event_count')}"
-        for row in targets
-    )
+    if not valid_targets:
+        details = "; ".join(
+            f"date={row.get('date_raw')}, "
+            f"excluded={row.get('excluded_dates')}, "
+            f"count={row.get('event_count')}"
+            for row in targets
+        )
 
-    raise RuntimeError(
-        "解析結果不正確：H9 2026/06 P089 應排除 1、29 日，共 28 次；"
-        f"目前解析結果：{details}"
-    )
+        raise RuntimeError(
+            "解析結果不正確：H9 2026/06 P089 "
+            "應排除 1、29 日，共 28 次；"
+            f"目前解析結果：{details}"
+        )
 
-target = max(valid_targets, key=_record_quality)
+    target = max(valid_targets, key=_record_quality)
 
     print(
         "[PASS] H9 2026/06 P089 已解析："
         f"{target.get('date_raw')} | {target.get('time_raw')} | "
-        f"count={target.get('event_count')} | exclude={target.get('excluded_dates')}"
+        f"count={target.get('event_count')} | "
+        f"exclude={target.get('excluded_dates')}"
     )
 
 
