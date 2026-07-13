@@ -116,7 +116,17 @@
             </div>
     </div>
 
-    <script src="data.js"></script>
+    <script>
+        // Always request the latest generated data.js. This avoids GitHub Pages
+        // or browser cache continuing to display an older dataset.
+        window.DATA_JS_READY = new Promise((resolve, reject) => {
+            const dataScript = document.createElement('script');
+            dataScript.src = `data.js?v=${Date.now()}`;
+            dataScript.onload = resolve;
+            dataScript.onerror = () => reject(new Error('無法載入 data.js'));
+            document.head.appendChild(dataScript);
+        });
+    </script>
     <script>
         let currentSat = 'H9'; 
         let currentMode = 'JMA'; 
@@ -166,10 +176,18 @@
             '其他': '#94a3b8'            
         };
 
-        document.addEventListener("DOMContentLoaded", () => {
+        document.addEventListener("DOMContentLoaded", async () => {
+            try {
+                await window.DATA_JS_READY;
+            } catch (error) {
+                document.getElementById('update-tag').innerText = '資料載入失敗';
+                document.getElementById('records-accordion-container').innerHTML = `<div class="text-center py-8 text-rose-500 bg-white rounded-xl border border-slate-200">${error.message}，請確認 data.js 與 index.html 位於同一資料夾。</div>`;
+                return;
+            }
+
             if (typeof ALL_SAT_DATA !== 'undefined') {
                 document.getElementById('update-tag').innerText = `網頁更新時間：${LAST_UPDATED}`;
-                updateYearDropdown(); 
+                updateYearDropdown();
                 refreshUI();
             } else {
                 document.getElementById('records-accordion-container').innerHTML = `<div class="text-center py-8 text-rose-500 bg-white rounded-xl border border-slate-200">找不到 data.js，請先執行 Python 腳本。</div>`;
