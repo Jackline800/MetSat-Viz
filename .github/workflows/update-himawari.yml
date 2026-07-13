@@ -6,7 +6,7 @@ on:
 
   # 每天臺灣時間 09:17 執行
   schedule:
-    - cron: "17 9 * * *"
+    - cron: "17 9 * * 1"
       timezone: "Asia/Taipei"
 
 concurrency:
