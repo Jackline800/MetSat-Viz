@@ -1,12 +1,11 @@
 name: Update Himawari observation pause data
 
 on:
-  # 可在 Actions 頁面手動執行
   workflow_dispatch:
 
-  # 每天臺灣時間 09:17 執行
+  # 每週一上午 09:00，臺灣時間
   schedule:
-    - cron: "17 9 * * 1"
+    - cron: "0 9 * * 1"
       timezone: "Asia/Taipei"
 
 concurrency:
@@ -14,10 +13,12 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write
+  pages: write
+  id-token: write
 
 jobs:
-  update-data:
+  update:
     name: Update Hima_ObsStop data
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -27,13 +28,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
-          token: ${{ secrets.PAGES_PUSH_TOKEN }}
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -66,11 +66,41 @@ jobs:
 
           if git diff --cached --quiet; then
             echo "Hima_ObsStop/data.js 沒有變更。"
-            exit 0
+          else
+            git commit -m "chore: update Himawari observation pause data"
+            git pull --rebase origin main
+            git push origin HEAD:main
           fi
 
-          git commit -m "chore: update Himawari observation pause data"
+      - name: Prepare GitHub Pages files
+        run: |
+          rm -rf _site
+          mkdir -p _site
 
-          # 降低排程執行期間 main 分支剛好有其他更新所造成的 push 衝突
-          git pull --rebase origin main
-          git push origin HEAD:main
+          rsync -a \
+            --exclude=".git" \
+            --exclude=".github" \
+            --exclude="_site" \
+            ./ _site/
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy GitHub Pages
+    needs: update
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
