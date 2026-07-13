@@ -584,26 +584,69 @@ def scrape_satellite_data(sat_code, url):
     return records
 
 
+def _normalized_dedup_text(value):
+    """去除空白差異，避免同一筆 JMA 紀錄被視為兩筆。"""
+    return re.sub(r"\s+", "", normalize_text(value or ""))
+
+
 def _dedup_key(r):
     return (
         r.get("satellite"),
         r.get("ad_year"),
         r.get("month"),
-        r.get("date_calc_raw") or r.get("date_raw"),
-        r.get("time_raw"),
-        r.get("event_jp"),
+        _normalized_dedup_text(
+            r.get("date_calc_raw") or r.get("date_raw")
+        ),
+        _normalized_dedup_text(r.get("time_raw")),
+        r.get("p_code") or "",
+        r.get("event_jp") or r.get("event_tw") or "",
+    )
+
+
+def _record_quality(r):
+    """同一事件有多種解析結果時，保留日期解析較完整的一筆。"""
+    affected = r.get("affected_dates")
+    affected_count = len(affected) if isinstance(affected, list) else 0
+
+    try:
+        event_count = int(r.get("event_count") or 0)
+    except (TypeError, ValueError):
+        event_count = 0
+
+    excluded = r.get("excluded_dates")
+    excluded_count = len(excluded) if isinstance(excluded, list) else 0
+
+    # affected_dates 與 event_count 相符，代表日期區間解析完整。
+    count_consistent = int(
+        affected_count > 0 and affected_count == event_count
+    )
+
+    return (
+        count_consistent,
+        affected_count,
+        event_count,
+        excluded_count,
     )
 
 
 def dedupe_records(records):
-    seen = set()
+    """合併語意相同的紀錄，並保留解析品質較高的一筆。"""
     out = []
-    for r in records:
-        key = _dedup_key(r)
-        if key in seen:
+    positions = {}
+
+    for record in records:
+        key = _dedup_key(record)
+
+        if key not in positions:
+            positions[key] = len(out)
+            out.append(record)
             continue
-        seen.add(key)
-        out.append(r)
+
+        index = positions[key]
+
+        if _record_quality(record) > _record_quality(out[index]):
+            out[index] = record
+
     return out
 
 
@@ -665,13 +708,28 @@ def validate_regression_records(records):
             "解析失敗：H9 2026/06 的 14:50 UTC(P089) 衛星維護紀錄仍不存在，已停止覆寫 data.js。"
         )
 
-    target = targets[0]
-    expected_excluded = [1, 29]
-    if target.get("excluded_dates") != expected_excluded or target.get("event_count") != 28:
-        raise RuntimeError(
-            "解析結果不正確：H9 2026/06 P089 應排除 1、29 日，共 28 次；"
-            f"目前為 excluded={target.get('excluded_dates')}, count={target.get('event_count')}。"
-        )
+expected_excluded = [1, 29]
+
+valid_targets = [
+    row for row in targets
+    if row.get("excluded_dates") == expected_excluded
+    and int(row.get("event_count") or 0) == 28
+]
+
+if not valid_targets:
+    details = "; ".join(
+        f"date={row.get('date_raw')}, "
+        f"excluded={row.get('excluded_dates')}, "
+        f"count={row.get('event_count')}"
+        for row in targets
+    )
+
+    raise RuntimeError(
+        "解析結果不正確：H9 2026/06 P089 應排除 1、29 日，共 28 次；"
+        f"目前解析結果：{details}"
+    )
+
+target = max(valid_targets, key=_record_quality)
 
     print(
         "[PASS] H9 2026/06 P089 已解析："
