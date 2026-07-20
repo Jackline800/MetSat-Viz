@@ -6,6 +6,29 @@ const ALL_SAT_DATA = [
     "reiwa_year": "令和8年",
     "era_year": "令和8年",
     "month": 7,
+    "date_raw": "7月22日",
+    "date_calc_raw": "7月22日",
+    "date_type": "單日",
+    "event_count": 1,
+    "affected_dates": [
+      22
+    ],
+    "excluded_dates": [],
+    "time_raw": "20:50 UTC(P125)",
+    "p_code": "P125",
+    "fd": "X",
+    "reg": "O",
+    "event_jp": "放射計太陽校正",
+    "event_tw": "輻射計太陽校正",
+    "memo": ""
+  },
+  {
+    "satellite": "H9",
+    "ad_year": 2026,
+    "roc_year": 115,
+    "reiwa_year": "令和8年",
+    "era_year": "令和8年",
+    "month": 7,
     "date_raw": "7月17日",
     "date_calc_raw": "7月17日",
     "date_type": "單日",
@@ -144,10 +167,10 @@ const ALL_SAT_DATA = [
     "reiwa_year": "令和8年",
     "era_year": "令和8年",
     "month": 7,
-    "date_raw": "7月1日～19日",
-    "date_calc_raw": "7月1日～19日",
+    "date_raw": "7月1日～26日",
+    "date_calc_raw": "7月1日～26日",
     "date_type": "期間",
-    "event_count": 19,
+    "event_count": 26,
     "affected_dates": [
       1,
       2,
@@ -167,7 +190,14 @@ const ALL_SAT_DATA = [
       16,
       17,
       18,
-      19
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26
     ],
     "excluded_dates": [],
     "time_raw": "02:50 UTC(P017)",
@@ -185,10 +215,10 @@ const ALL_SAT_DATA = [
     "reiwa_year": "令和8年",
     "era_year": "令和8年",
     "month": 7,
-    "date_raw": "7月1日～19日",
-    "date_calc_raw": "7月1日～19日",
+    "date_raw": "7月1日～26日",
+    "date_calc_raw": "7月1日～26日",
     "date_type": "期間",
-    "event_count": 19,
+    "event_count": 26,
     "affected_dates": [
       1,
       2,
@@ -208,7 +238,14 @@ const ALL_SAT_DATA = [
       16,
       17,
       18,
-      19
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26
     ],
     "excluded_dates": [],
     "time_raw": "14:50 UTC(P089)",
@@ -41505,4 +41542,4 @@ const ALL_SAT_DATA = [
     "memo": "parser補完：依JMA表格原始文字復原"
   }
 ];
-const LAST_UPDATED = '2026-07-13 14:59:03';
+const LAST_UPDATED = '2026-07-20 10:15:37';
