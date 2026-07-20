@@ -278,7 +278,7 @@
   <button id="saveBtn">儲存版面</button><button id="resetBtn" class="secondary">重設</button>
   <button id="exportBtn" class="secondary">匯出目前 HTML</button>
   <button id="clearProductImg" class="danger">產品圖還原</button>
-  <div class="hint">預設已改為操場形軌道；右上角可收起／展開此面板。「主物件 Y 位移」可把中心圖與所有產品圖一起往下移，不會影響綠色標題帶。拖曳中心物件或產品可移動；點選後可用 X/Y、圖大小、字大小微調；已移除黃色選取框。「中心圖細部調整」可單獨移動與縮放中間的衛星圖，不會影響 SAT 文字。產品名稱、標題、中心文字可直接點選修改。置換產品圖時，請先點選要替換的產品。</div>
+  <div class="hint">預設已改為操場形軌道；右上角可收起／展開此面板。「主物件 Y 位移」可把中心圖與所有產品圖一起往下移，不會影響綠色標題帶。拖曳中心物件或產品可移動；點選後可用 X/Y、圖大小、字大小微調；已移除黃色選取框。「中心圖細部調整」可單獨移動與縮放中間的衛星圖，不會影響 SAT 文字。產品名稱、標題、中心文字可直接點選修改。產品圖預設讀取 Products/ 資料夾內的對應圖檔，也可用「置換產品圖」臨時替換；置換產品圖時，請先點選要替換的產品。</div>
 </div>
 
 <div id="canvas" class="canvas stars shape-stadium">
@@ -360,6 +360,47 @@ const safeStorage = {
 const productData = [
   ['可見光\n頻道雲圖','VIS'],['紅外線\n雲圖','IR'],['真實色\n影像','TC'],['日夜間\n可見光雲圖','DNB'],['RGB\n合成圖','RGB'],['對流起始\n偵測','CI'],['高解析\n衛星風場','AMV'],['AI定量\n降水估計','QPE'],['沙塵暴\n偵測','DST'],['火點\n偵測','FIRE'],['反照率\n（表面）','ALB'],['氣膠光學\n厚度','AOD'],['PM₂.₅\n濃度','PM'],['氣膠粒子\n大小','SIZE'],['氣膠\n種類','TYPE'],['雲量／\n雲遮','CLD'],['雲光學\n厚度','COD'],['雲低有效\n粒徑','CER'],['雲頂高度／\n氣壓／溫度','CTH'],['地表面\n溫度','LST'],['海表面\n溫度','SST'],['地表植被\n指數','NDVI'],['地表短波輻射量／\n日射量','SW'],['日照\n時數','SUN']
 ];
+
+/*
+  產品圖檔設定：
+  - 圖片請放在 index.html 同層的 Products/ 資料夾。
+  - 預設檔名為「產品代碼.png」，例如 Products/VIS.png、Products/FIRE.png。
+  - 若單一產品要使用不同檔名，只要改下面對應的路徑即可。
+  - 如果圖檔不存在，網頁會自動退回原本的 SVG 佔位圖。
+*/
+const productImages = {
+  VIS:  'Products/VIS.png',
+  IR:   'Products/IR.png',
+  TC:   'Products/TC.png',
+  DNB:  'Products/DNB.png',
+  RGB:  'Products/RGB.png',
+  CI:   'Products/CI.png',
+  AMV:  'Products/AMV.png',
+  QPE:  'Products/QPE.png',
+  DST:  'Products/DST.png',
+  FIRE: 'Products/FIRE.png',
+  ALB:  'Products/ALB.png',
+  AOD:  'Products/AOD.png',
+  PM:   'Products/PM.png',
+  SIZE: 'Products/SIZE.png',
+  TYPE: 'Products/TYPE.png',
+  CLD:  'Products/CLD.png',
+  COD:  'Products/COD.png',
+  CER:  'Products/CER.png',
+  CTH:  'Products/CTH.png',
+  LST:  'Products/LST.png',
+  SST:  'Products/SST.png',
+  NDVI: 'Products/NDVI.png',
+  SW:   'Products/Insolation.png',
+  SUN:  'Products/SUN.png'
+};
+
+// 中心圖檔設定；若沒有此檔，會自動使用程式內建的衛星示意圖。
+const centerImageFile = 'Products/CENTER.png';
+
+function getProductImage(code){
+  return productImages[code] || svgData(code, code);
+}
 const positions = [
   [230,88],[355,88],[480,88],[605,88],[730,88],[855,88],[980,88],[1105,88],
   [1196,160],[1246,270],[1240,380],[1168,480],
@@ -382,7 +423,11 @@ function centerPlaceholder(){
 const wrap = document.getElementById('products');
 const centerBox = document.getElementById('centerBox');
 const centerImg = document.getElementById('centerImg');
-centerImg.src = centerPlaceholder();
+centerImg.src = centerImageFile;
+centerImg.onerror = () => {
+  centerImg.onerror = null;
+  centerImg.src = centerPlaceholder();
+};
 function applyCenterImageControls(){
   centerImg.style.left = centerImgX.value + 'px';
   centerImg.style.top = centerImgY.value + 'px';
@@ -412,7 +457,16 @@ function createProducts(){
     el.dataset.id=i;
     el.style.left=positions[i][0]+'px';
     el.style.top=positions[i][1]+'px';
-    el.innerHTML=`<div class="thumb"><img alt="${p[1]}" src="${svgData(p[1],p[1])}"></div><div class="label" contenteditable="true">${p[0].replaceAll('\n','<br>')}</div>`;
+
+    const imgSrc = getProductImage(p[1]);
+    el.innerHTML=`<div class="thumb"><img alt="${p[1]}" src="${imgSrc}"></div><div class="label" contenteditable="true">${p[0].replaceAll('\n','<br>')}</div>`;
+
+    const img = el.querySelector('.thumb img');
+    img.onerror = () => {
+      img.onerror = null;
+      img.src = svgData(p[1], p[1]);
+    };
+
     wrap.appendChild(el);
   });
 }
@@ -514,7 +568,13 @@ productUpload.onchange=e=>{
 clearProductImg.onclick=()=>{
   if(!selected || selected.dataset.kind !== 'product') { alert('請先點選要還原的產品。'); return; }
   const id=+selected.dataset.id;
-  selected.querySelector('.thumb img').src=svgData(productData[id][1],productData[id][1]);
+  const code = productData[id][1];
+  const img = selected.querySelector('.thumb img');
+  img.onerror = () => {
+    img.onerror = null;
+    img.src = svgData(code, code);
+  };
+  img.src = getProductImage(code);
 };
 
 function getState(){
@@ -569,12 +629,12 @@ function updateInitialState(){document.getElementById('initialState').textConten
 try{
   const embedded=document.getElementById('initialState').textContent.trim();
   if(embedded) applyState(JSON.parse(embedded));
-  const saved=safeStorage.get('satProductLayoutV5');
+  const saved=safeStorage.get('satProductLayoutV6');
   if(saved) applyState(JSON.parse(saved));
 }catch(e){console.warn(e)}
 
-saveBtn.onclick=()=>{safeStorage.set('satProductLayoutV5',JSON.stringify(getState())); alert('已儲存在此瀏覽器。')};
-resetBtn.onclick=()=>{safeStorage.remove('satProductLayoutV5'); location.reload()};
+saveBtn.onclick=()=>{safeStorage.set('satProductLayoutV6',JSON.stringify(getState())); alert('已儲存在此瀏覽器。')};
+resetBtn.onclick=()=>{safeStorage.remove('satProductLayoutV6'); location.reload()};
 exportBtn.onclick=()=>{
   updateInitialState();
   const html='<!doctype html>\n'+document.documentElement.outerHTML;
