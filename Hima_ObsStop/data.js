@@ -6,13 +6,43 @@ const ALL_SAT_DATA = [
     "reiwa_year": "令和8年",
     "era_year": "令和8年",
     "month": 8,
-    "date_raw": "8月1日～2日",
-    "date_calc_raw": "8月1日～2日",
+    "date_raw": "8月7日",
+    "date_calc_raw": "8月7日",
+    "date_type": "單日",
+    "event_count": 1,
+    "affected_dates": [
+      7
+    ],
+    "excluded_dates": [],
+    "time_raw": "20:50 UTC(P125)",
+    "p_code": "P125",
+    "fd": "X",
+    "reg": "O",
+    "event_jp": "放射計太陽校正",
+    "event_tw": "輻射計太陽校正",
+    "memo": ""
+  },
+  {
+    "satellite": "H9",
+    "ad_year": 2026,
+    "roc_year": 115,
+    "reiwa_year": "令和8年",
+    "era_year": "令和8年",
+    "month": 8,
+    "date_raw": "8月1日～9日",
+    "date_calc_raw": "8月1日～9日",
     "date_type": "期間",
-    "event_count": 2,
+    "event_count": 9,
     "affected_dates": [
       1,
-      2
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
     ],
     "excluded_dates": [],
     "time_raw": "02:50 UTC(P017)",
@@ -30,13 +60,20 @@ const ALL_SAT_DATA = [
     "reiwa_year": "令和8年",
     "era_year": "令和8年",
     "month": 8,
-    "date_raw": "8月1日～2日",
-    "date_calc_raw": "8月1日～2日",
+    "date_raw": "8月1日～9日",
+    "date_calc_raw": "8月1日～9日",
     "date_type": "期間",
-    "event_count": 2,
+    "event_count": 9,
     "affected_dates": [
       1,
-      2
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
     ],
     "excluded_dates": [],
     "time_raw": "14:50 UTC(P089)",
@@ -41692,4 +41729,4 @@ const ALL_SAT_DATA = [
     "memo": "parser補完：依JMA表格原始文字復原"
   }
 ];
-const LAST_UPDATED = '2026-07-27 12:28:58';
+const LAST_UPDATED = '2026-08-03 12:22:09';
