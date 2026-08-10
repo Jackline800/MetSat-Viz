@@ -8,25 +8,35 @@
 :root{--ink:#26353d;--muted:#7a8992;--sea:#79cfe4;--sea2:#64bed8;--panel:#f7f9fa;--line:#d7e3e8;--accent:#2a7f9f;}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC","Microsoft JhengHei",Arial,sans-serif;background:#f3f6f7;color:var(--ink);overflow:hidden}
-.header{min-height:152px;padding:10px 12px 8px;border-bottom:1px solid #e4eaed;background:var(--panel);display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto;gap:8px 16px}
-.title{font-size:16px;font-weight:700;line-height:1.2;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.summary{font-size:11px;color:#8a969d;align-self:start;white-space:nowrap;padding-top:2px}
-.legend{grid-column:1/3;display:flex;align-items:center;gap:12px;overflow-x:auto;white-space:nowrap;scrollbar-width:thin;font-size:10px;color:#596a73;padding-bottom:1px}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC","Microsoft JhengHei",Arial,sans-serif;background:#f3f6f7;color:var(--ink);overflow:hidden;display:grid;grid-template-columns:280px minmax(0,1fr)}
+.header{height:100%;min-width:0;padding:18px 16px;border-right:1px solid #dde6ea;background:var(--panel);display:flex;flex-direction:column;gap:14px;overflow-y:auto}
+.title{font-size:18px;font-weight:700;line-height:1.35;letter-spacing:.01em}
+.summary{font-size:11px;line-height:1.55;color:#7e8c94;padding-bottom:12px;border-bottom:1px solid #e2e9ec}
+.legend{display:grid;grid-template-columns:1fr;gap:8px;font-size:11px;color:#596a73;padding-bottom:12px;border-bottom:1px solid #e2e9ec}
 .legend-item{display:inline-flex;align-items:center;gap:4px}
 .legend-dot{width:8px;height:8px;border-radius:50%;border:1px solid #fff;box-shadow:0 0 0 1px rgba(30,55,68,.18)}
 .legend-count{color:#94a0a7}
-.filters{grid-column:1/3;display:flex;flex-wrap:wrap;gap:10px 12px;align-items:end}
-.filter-group{display:flex;flex-direction:column;gap:4px;min-width:150px}
-.filter-group label{font-size:11px;color:#6c7d86;font-weight:600}
-.filter-group select{height:34px;padding:0 34px 0 10px;border:1px solid #cfd9de;border-radius:8px;background:#fff;color:#243840;font-size:13px;outline:none}
-.filter-group select:focus{border-color:#78aeca;box-shadow:0 0 0 3px rgba(74,142,170,.14)}
-.filter-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.btn{height:34px;padding:0 14px;border:1px solid #c9d6dc;border-radius:8px;background:#fff;color:#28424c;font-size:13px;font-weight:600;cursor:pointer}
+.filters{display:flex;flex-direction:column;gap:12px}
+.multi-filter{width:100%;border:1px solid #cfd9de;border-radius:6px;background:#fff;overflow:hidden}
+.multi-filter:focus-within{border-color:#78aeca;box-shadow:0 0 0 3px rgba(74,142,170,.14)}
+.multi-filter summary{min-height:42px;padding:6px 10px;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;column-gap:8px;align-items:center;cursor:pointer;list-style:none}
+.multi-filter summary::-webkit-details-marker{display:none}
+.multi-filter summary::after{content:'▾';grid-column:2;grid-row:1/3;color:#71838c;transition:transform .15s ease}
+.multi-filter[open] summary::after{transform:rotate(180deg)}
+.multi-filter[open] summary{border-bottom:1px solid #e3eaed}
+.multi-filter-label{font-size:11px;color:#6c7d86;font-weight:600}
+.multi-filter-value{font-size:13px;color:#243840;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.multi-options{display:grid;gap:2px;padding:7px 9px 8px}
+.multi-option{min-height:30px;display:flex;align-items:center;gap:8px;padding:3px 2px;font-size:12px;color:#344952;cursor:pointer}
+.multi-option input{width:15px;height:15px;margin:0;accent-color:var(--accent)}
+.multi-clear{justify-self:start;margin-top:3px;padding:3px 2px;border:0;background:transparent;color:#287594;font-size:11px;cursor:pointer}
+.multi-clear:hover{text-decoration:underline}
+.filter-actions{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding-top:2px}
+.btn{width:100%;height:36px;padding:0 14px;border:1px solid #c9d6dc;border-radius:6px;background:#fff;color:#28424c;font-size:13px;font-weight:600;cursor:pointer}
 .btn:hover{background:#f1f6f8}
-.filter-note{font-size:11px;color:#83929a}
-.stage{height:calc(100% - 172px);display:flex;align-items:center;justify-content:center;padding:0 14px 8px}
-.map-card{position:relative;height:min(100%,760px);aspect-ratio:0.97;max-width:calc(100vw - 28px);overflow:hidden;background:#7bcbe1;box-shadow:0 0 0 1px rgba(42,93,108,.12);isolation:isolate;border-radius:2px}
+.filter-note{font-size:11px;line-height:1.45;color:#83929a}
+.stage{height:100%;min-width:0;display:flex;align-items:center;justify-content:center;padding:14px}
+.map-card{position:relative;height:min(100%,880px);aspect-ratio:0.97;max-width:100%;overflow:hidden;background:#7bcbe1;box-shadow:0 0 0 1px rgba(42,93,108,.12);isolation:isolate;border-radius:2px}
 #mapSvg{display:block;width:100%;height:100%;touch-action:none;user-select:none;cursor:grab}
 #mapSvg.dragging{cursor:grabbing}
 .land{fill:url(#landFill);stroke:#8ea87c;stroke-width:1.15;vector-effect:non-scaling-stroke}
@@ -48,21 +58,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC","Mic
 .control-btn{width:36px;height:36px;border:1px solid rgba(48,78,90,.22);background:rgba(255,255,255,.95);border-radius:8px;box-shadow:0 2px 10px rgba(30,55,68,.10);font-size:20px;line-height:1;color:#31515d;cursor:pointer}
 .control-btn:hover{background:#fff}
 .map-help{position:absolute;left:12px;bottom:12px;z-index:10;padding:6px 10px;background:rgba(255,255,255,.90);border:1px solid rgba(48,78,90,.15);border-radius:8px;color:#546871;font-size:11px;box-shadow:0 2px 10px rgba(30,55,68,.08)}
-@media (max-width:900px){
-  .header{grid-template-columns:1fr;grid-template-rows:auto auto auto auto;gap:6px;padding:8px 10px}
-  .summary{grid-column:1;grid-row:2}
-  .legend{grid-column:1;grid-row:3}
-  .filters{grid-column:1;grid-row:4}
-  .stage{height:calc(100% - 248px);padding:0 8px 8px}
+@media (max-width:760px){
+  body{display:block;overflow:auto}
+  .header{height:auto;padding:12px;border-right:0;border-bottom:1px solid #dde6ea;overflow:visible;gap:10px}
+  .title{font-size:16px}
+  .summary{padding-bottom:8px}
+  .legend{grid-template-columns:repeat(2,minmax(0,1fr));padding-bottom:10px}
+  .filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .filter-actions{grid-column:1/-1}
+  .stage{height:72vh;min-height:480px;padding:8px}
 }
-@media (max-width:680px){
-  .filter-group{min-width:calc(50% - 6px)}
-  .title{font-size:15px}
+@media (max-width:480px){
+  .legend,.filters{grid-template-columns:1fr}
+  .stage{height:68vh;min-height:420px}
   .summary,.filter-note,.map-help{font-size:10px}
-}
-@media (max-width:520px){
-  .filter-group{min-width:100%}
-  .stage{height:calc(100% - 368px)}
 }
 </style>
 </head>
@@ -72,22 +81,46 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC","Mic
   <div class="summary" id="summaryText">顯示 1265 / 1265 站｜現存 891｜已撤銷 374｜資料更新 2026-07-27</div>
   <div class="legend"><span class="legend-item" data-cat="1949年以前"><span class="legend-dot" style="background:#4EA8B2"></span>1949 年以前 <span class="legend-count" id="legend-1949年以前"></span></span><span class="legend-item" data-cat="1950-1979年"><span class="legend-dot" style="background:#2F7FA3"></span>1950–1979 年 <span class="legend-count" id="legend-1950-1979年"></span></span><span class="legend-item" data-cat="1980-1999年"><span class="legend-dot" style="background:#4FA95D"></span>1980–1999 年 <span class="legend-count" id="legend-1980-1999年"></span></span><span class="legend-item" data-cat="2000-2009年"><span class="legend-dot" style="background:#E2C75D"></span>2000–2009 年 <span class="legend-count" id="legend-2000-2009年"></span></span><span class="legend-item" data-cat="2010-2019年"><span class="legend-dot" style="background:#E28A39"></span>2010–2019 年 <span class="legend-count" id="legend-2010-2019年"></span></span><span class="legend-item" data-cat="2020年至今"><span class="legend-dot" style="background:#D9534F"></span>2020 年至今 <span class="legend-count" id="legend-2020年至今"></span></span></div>
   <div class="filters">
-    <div class="filter-group">
-      <label for="typeFilter">站種</label>
-      <select id="typeFilter"><option value="__all__">全部</option><option value="署屬有人站">署屬有人站</option><option value="署屬自動站">署屬自動站</option><option value="農業站">農業站</option></select>
-    </div>
-    <div class="filter-group">
-      <label for="categoryFilter">起始年份</label>
-      <select id="categoryFilter"><option value="__all__">全部</option><option value="1949年以前">1949 年以前</option><option value="1950-1979年">1950–1979 年</option><option value="1980-1999年">1980–1999 年</option><option value="2000-2009年">2000–2009 年</option><option value="2010-2019年">2010–2019 年</option><option value="2020年至今">2020 年至今</option></select>
-    </div>
-    <div class="filter-group">
-      <label for="statusFilter">狀態</label>
-      <select id="statusFilter"><option value="__all__">全部</option><option value="現存">現存</option><option value="已撤銷">已撤銷</option></select>
-    </div>
-    <div class="filter-group">
-      <label for="elevFilter">海拔分類</label>
-      <select id="elevFilter"><option value="__all__">全部</option><option value="0–99 m">0–99 m</option><option value="100–499 m">100–499 m</option><option value="500–999 m">500–999 m</option><option value="1000–1999 m">1000–1999 m</option><option value="2000 m 以上">2000 m 以上</option></select>
-    </div>
+    <details class="multi-filter">
+      <summary><span class="multi-filter-label">站種</span><span class="multi-filter-value" id="typeFilterValue">全部</span></summary>
+      <div class="multi-options" id="typeFilter">
+        <label class="multi-option"><input type="checkbox" value="署屬有人站"><span>署屬有人站</span></label>
+        <label class="multi-option"><input type="checkbox" value="署屬自動站"><span>署屬自動站</span></label>
+        <label class="multi-option"><input type="checkbox" value="農業站"><span>農業站</span></label>
+        <button type="button" class="multi-clear" data-filter="typeFilter">清除選取</button>
+      </div>
+    </details>
+    <details class="multi-filter">
+      <summary><span class="multi-filter-label">起始年份</span><span class="multi-filter-value" id="categoryFilterValue">全部</span></summary>
+      <div class="multi-options" id="categoryFilter">
+        <label class="multi-option"><input type="checkbox" value="1949年以前"><span>1949 年以前</span></label>
+        <label class="multi-option"><input type="checkbox" value="1950-1979年"><span>1950–1979 年</span></label>
+        <label class="multi-option"><input type="checkbox" value="1980-1999年"><span>1980–1999 年</span></label>
+        <label class="multi-option"><input type="checkbox" value="2000-2009年"><span>2000–2009 年</span></label>
+        <label class="multi-option"><input type="checkbox" value="2010-2019年"><span>2010–2019 年</span></label>
+        <label class="multi-option"><input type="checkbox" value="2020年至今"><span>2020 年至今</span></label>
+        <button type="button" class="multi-clear" data-filter="categoryFilter">清除選取</button>
+      </div>
+    </details>
+    <details class="multi-filter">
+      <summary><span class="multi-filter-label">狀態</span><span class="multi-filter-value" id="statusFilterValue">全部</span></summary>
+      <div class="multi-options" id="statusFilter">
+        <label class="multi-option"><input type="checkbox" value="現存"><span>現存</span></label>
+        <label class="multi-option"><input type="checkbox" value="已撤銷"><span>已撤銷</span></label>
+        <button type="button" class="multi-clear" data-filter="statusFilter">清除選取</button>
+      </div>
+    </details>
+    <details class="multi-filter">
+      <summary><span class="multi-filter-label">海拔分類</span><span class="multi-filter-value" id="elevFilterValue">全部</span></summary>
+      <div class="multi-options" id="elevFilter">
+        <label class="multi-option"><input type="checkbox" value="0–99 m"><span>0–99 m</span></label>
+        <label class="multi-option"><input type="checkbox" value="100–499 m"><span>100–499 m</span></label>
+        <label class="multi-option"><input type="checkbox" value="500–999 m"><span>500–999 m</span></label>
+        <label class="multi-option"><input type="checkbox" value="1000–1999 m"><span>1000–1999 m</span></label>
+        <label class="multi-option"><input type="checkbox" value="2000 m 以上"><span>2000 m 以上</span></label>
+        <button type="button" class="multi-clear" data-filter="elevFilter">清除選取</button>
+      </div>
+    </details>
     <div class="filter-actions">
       <button type="button" class="btn" id="resetFilters">重設篩選</button>
       <div class="filter-note" id="filterNote">目前顯示全部測站</div>
@@ -120,6 +153,12 @@ const svg=document.getElementById('mapSvg'), wrap=document.getElementById('mapWr
 const typeFilter=document.getElementById('typeFilter'), categoryFilter=document.getElementById('categoryFilter'), statusFilter=document.getElementById('statusFilter'), elevFilter=document.getElementById('elevFilter');
 const resetBtn=document.getElementById('resetFilters'), summaryText=document.getElementById('summaryText'), filterNote=document.getElementById('filterNote'), emptyState=document.getElementById('emptyState');
 const zoomInBtn=document.getElementById('zoomIn'), zoomOutBtn=document.getElementById('zoomOut'), resetViewBtn=document.getElementById('resetView');
+const filterConfigs=[
+  {root:typeFilter,valueNode:document.getElementById('typeFilterValue'),noteLabel:'站種'},
+  {root:categoryFilter,valueNode:document.getElementById('categoryFilterValue'),noteLabel:'起始年份'},
+  {root:statusFilter,valueNode:document.getElementById('statusFilterValue'),noteLabel:'狀態'},
+  {root:elevFilter,valueNode:document.getElementById('elevFilterValue'),noteLabel:'海拔'},
+];
 const extent={minLon:117.80,maxLon:122.30,minLat:21.70,maxLat:26.55},cosLat=Math.cos(24.1*Math.PI/180);
 let T={}, viewportGroup=null, plotBox={left:45,right:20,top:18,bottom:28}, zoomState={scale:1,tx:0,ty:0}, dragState=null;
 
@@ -133,8 +172,13 @@ function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
 function niceLon(v){return `${v.toFixed(v % 1 === 0 ? 0 : 1)}°E`}
 function niceLat(v){return `${v.toFixed(v % 1 === 0 ? 0 : 1)}°N`}
 function buildTickValues(min,max,step){const vals=[];let start=Math.ceil(min/step)*step;for(let v=start;v<=max+1e-9;v+=step) vals.push(Number(v.toFixed(4)));return vals}
-function getFilteredStations(){return stations.filter(s => (typeFilter.value==='__all__' || s.type===typeFilter.value) && (categoryFilter.value==='__all__' || s.category===categoryFilter.value) && (statusFilter.value==='__all__' || s.status===statusFilter.value) && (elevFilter.value==='__all__' || s.elevBand===elevFilter.value))}
-function buildNote(){const parts=[];if(typeFilter.value!=='__all__') parts.push(`站種：${typeFilter.value}`);if(categoryFilter.value!=='__all__') parts.push(`起始年份：${categoryLabels[categoryFilter.value]||categoryFilter.value}`);if(statusFilter.value!=='__all__') parts.push(`狀態：${statusFilter.value}`);if(elevFilter.value!=='__all__') parts.push(`海拔：${elevFilter.value}`);return parts.length ? parts.join('｜') : '目前顯示全部測站'}
+function selectedInputs(root){return [...root.querySelectorAll('input[type="checkbox"]:checked')]}
+function selectedValues(root){return new Set(selectedInputs(root).map(input=>input.value))}
+function selectedLabels(root){return selectedInputs(root).map(input=>input.closest('.multi-option').querySelector('span').textContent)}
+function matchesSelection(values,value){return values.size===0 || values.has(value)}
+function updateFilterSummaries(){for(const config of filterConfigs){const labels=selectedLabels(config.root);config.valueNode.textContent=labels.length===0?'全部':labels.length===1?labels[0]:`已選 ${labels.length} 項`;}}
+function getFilteredStations(){const types=selectedValues(typeFilter), categories=selectedValues(categoryFilter), statuses=selectedValues(statusFilter), elevations=selectedValues(elevFilter);return stations.filter(s=>matchesSelection(types,s.type)&&matchesSelection(categories,s.category)&&matchesSelection(statuses,s.status)&&matchesSelection(elevations,s.elevBand))}
+function buildNote(){const parts=[];for(const config of filterConfigs){const labels=selectedLabels(config.root);if(labels.length) parts.push(`${config.noteLabel}：${labels.join('、')}`);}return parts.length?parts.join('｜'):'目前顯示全部測站'}
 function updateLegend(filtered){const counts={};for(const c of categoryOrder) counts[c]=0;for(const s of filtered){if(counts[s.category]!==undefined) counts[s.category]++}for(const c of categoryOrder){const node=document.getElementById(`legend-${c}`);if(node) node.textContent=`(${counts[c]})`}}
 function applyViewportTransform(){if(!viewportGroup) return; viewportGroup.setAttribute('transform',`translate(${zoomState.tx} ${zoomState.ty}) scale(${zoomState.scale})`);}
 function resetView(){zoomState={scale:1,tx:0,ty:0};applyViewportTransform();hideTip();}
@@ -163,13 +207,11 @@ function render(){
   const shade=el('radialGradient',{id:'landShade',cx:'55%',cy:'48%',r:'58%'}); shade.append(el('stop',{offset:'0%','stop-color':'#6b9b56','stop-opacity':'.55'}),el('stop',{offset:'42%','stop-color':'#81a965','stop-opacity':'.20'}),el('stop',{offset:'100%','stop-color':'#fff','stop-opacity':'0'})); defs.appendChild(shade);
   const noise=el('filter',{id:'terrain',x:'-10%',y:'-10%',width:'120%',height:'120%'}); noise.append(el('feTurbulence',{type:'fractalNoise',baseFrequency:'.035 .085',numOctaves:'3',seed:'9',result:'n'})); noise.append(el('feColorMatrix',{in:'n',type:'matrix',values:'0 0 0 0 0.24  0 0 0 0 0.34  0 0 0 0 0.16  0 0 0 .16 0',result:'c'})); noise.append(el('feBlend',{in:'SourceGraphic',in2:'c',mode:'multiply'})); defs.appendChild(noise);
   const shadow=el('filter',{id:'pointShadow',x:'-50%',y:'-50%',width:'200%',height:'200%'}); shadow.append(el('feDropShadow',{dx:'0',dy:'.35',stdDeviation:'.35','flood-color':'#20495b','flood-opacity':'.34'})); defs.appendChild(shadow);
-  const clip=el('clipPath',{id:'plotClip'}); clip.appendChild(el('rect',{x:T.left,y:T.top,width:T.width,height:T.height})); defs.appendChild(clip);
   svg.appendChild(defs);
   svg.appendChild(el('rect',{x:0,y:0,width:w,height:h,fill:'#eef4f6'}));
-  svg.appendChild(el('rect',{x:T.left,y:T.top,width:T.width,height:T.height,fill:'url(#seaFill)'}));
-  svg.appendChild(drawFrameAndGrid());
-
-  viewportGroup=el('g',{'clip-path':'url(#plotClip)'});
+  viewportGroup=el('g');
+  viewportGroup.appendChild(el('rect',{x:T.left,y:T.top,width:T.width,height:T.height,fill:'url(#seaFill)'}));
+  viewportGroup.appendChild(drawFrameAndGrid());
   const waterFx=el('g',{opacity:'.13'}); for(let i=0;i<6;i++){const cx=T.left+T.width*(.10+i*.16), cy=T.top+T.height*(.16+(i%3)*.28); waterFx.appendChild(el('ellipse',{cx,cy,rx:T.width*.15,ry:T.height*.05,fill:'#d9f3f7',transform:`rotate(${i%2?12:-9} ${cx} ${cy})`}))} viewportGroup.appendChild(waterFx);
   const landG=el('g');
   for(const poly of coastPolygons){const d=pathFrom(poly); landG.appendChild(el('path',{d,class:'land'})); landG.appendChild(el('path',{d,fill:'url(#landShade)',class:'land-shade',filter:'url(#terrain)'})); landG.appendChild(el('path',{d,class:'coast-highlight'}));}
@@ -184,14 +226,16 @@ function render(){
   emptyState.style.display=filtered.length?'none':'block';
   const current=filtered.filter(s=>s.status==='現存').length, closed=filtered.filter(s=>s.status==='已撤銷').length;
   summaryText.textContent=`顯示 ${filtered.length} / ${totalCount} 站｜現存 ${current}｜已撤銷 ${closed}｜資料更新 2026-07-27`;
+  updateFilterSummaries();
   filterNote.textContent=buildNote();
   updateLegend(filtered);
 }
 function showTip(ev,s){const color=colors[s.category]||'#666'; const closed=s.status==='已撤銷'&&s.end?`<div class="tt-row"><span class="tt-label">撤站日期：</span>${esc(s.end)}</div>`:''; tooltip.innerHTML=`<div class="tt-title">${esc(s.name)}（${esc(s.id)}）</div><div class="tt-row">${esc(s.type)}｜<span class="tt-cat" style="color:${color}">${esc(categoryLabels[s.category]||s.category)}</span></div><div class="tt-row"><span class="tt-label">狀態：</span>${esc(s.status)}</div><div class="tt-row"><span class="tt-label">建站日期：</span>${esc(s.start)}</div>${closed}<div class="tt-row"><span class="tt-label">海拔分類：</span>${esc(s.elevBand)}</div><div class="tt-row">${esc(s.county)}｜<span class="tt-coord">${coord(s.lon)}, ${coord(s.lat)}</span></div>${s.elev!==null?`<div class="tt-row tt-elev"><span class="tt-label">海拔：</span>${elevation(s.elev)} m</div>`:''}`; tooltip.style.display='block'; moveTip(ev);}
 function moveTip(ev){const r=wrap.getBoundingClientRect(), tw=tooltip.offsetWidth, th=tooltip.offsetHeight; let x=ev.clientX-r.left+14, y=ev.clientY-r.top+14; if(x+tw>r.width-8) x=ev.clientX-r.left-tw-14; if(y+th>r.height-8) y=ev.clientY-r.top-th-14; tooltip.style.left=Math.max(8,x)+'px'; tooltip.style.top=Math.max(8,y)+'px';}
 function hideTip(){tooltip.style.display='none';}
-[typeFilter,categoryFilter,statusFilter,elevFilter].forEach(sel=>sel.addEventListener('change',render));
-resetBtn.addEventListener('click',()=>{typeFilter.value='__all__'; categoryFilter.value='__all__'; statusFilter.value='__all__'; elevFilter.value='__all__'; render();});
+filterConfigs.forEach(config=>config.root.addEventListener('change',render));
+document.querySelectorAll('.multi-clear').forEach(button=>button.addEventListener('click',()=>{document.getElementById(button.dataset.filter).querySelectorAll('input:checked').forEach(input=>input.checked=false);render();}));
+resetBtn.addEventListener('click',()=>{filterConfigs.forEach(config=>config.root.querySelectorAll('input:checked').forEach(input=>input.checked=false));document.querySelectorAll('.multi-filter').forEach(filter=>filter.open=false);render();});
 zoomInBtn.addEventListener('click',()=>zoomAt((T.left+T.right)/2,(T.top+T.bottom)/2,1.25));
 zoomOutBtn.addEventListener('click',()=>zoomAt((T.left+T.right)/2,(T.top+T.bottom)/2,0.8));
 resetViewBtn.addEventListener('click',resetView);
