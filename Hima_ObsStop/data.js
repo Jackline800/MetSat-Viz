@@ -6,6 +6,75 @@ const ALL_SAT_DATA = [
     "reiwa_year": "令和8年",
     "era_year": "令和8年",
     "month": 8,
+    "date_raw": "8月14日",
+    "date_calc_raw": "8月14日",
+    "date_type": "單日",
+    "event_count": 1,
+    "affected_dates": [
+      14
+    ],
+    "excluded_dates": [],
+    "time_raw": "07:40 UTC(P046)",
+    "p_code": "P046",
+    "fd": "X",
+    "reg": "O",
+    "event_jp": "東西軌道制御",
+    "event_tw": "東西軌道控制",
+    "memo": ""
+  },
+  {
+    "satellite": "H9",
+    "ad_year": 2026,
+    "roc_year": 115,
+    "reiwa_year": "令和8年",
+    "era_year": "令和8年",
+    "month": 8,
+    "date_raw": "8月13日",
+    "date_calc_raw": "8月13日",
+    "date_type": "單日",
+    "event_count": 1,
+    "affected_dates": [
+      13
+    ],
+    "excluded_dates": [],
+    "time_raw": "19:40 UTC(P118)",
+    "p_code": "P118",
+    "fd": "X",
+    "reg": "O",
+    "event_jp": "東西軌道制御",
+    "event_tw": "東西軌道控制",
+    "memo": ""
+  },
+  {
+    "satellite": "H9",
+    "ad_year": 2026,
+    "roc_year": 115,
+    "reiwa_year": "令和8年",
+    "era_year": "令和8年",
+    "month": 8,
+    "date_raw": "8月10日",
+    "date_calc_raw": "8月10日",
+    "date_type": "單日",
+    "event_count": 1,
+    "affected_dates": [
+      10
+    ],
+    "excluded_dates": [],
+    "time_raw": "11:20 UTC(P068)",
+    "p_code": "P068",
+    "fd": "X",
+    "reg": "O",
+    "event_jp": "南北軌道制御",
+    "event_tw": "南北軌道控制",
+    "memo": ""
+  },
+  {
+    "satellite": "H9",
+    "ad_year": 2026,
+    "roc_year": 115,
+    "reiwa_year": "令和8年",
+    "era_year": "令和8年",
+    "month": 8,
     "date_raw": "8月7日",
     "date_calc_raw": "8月7日",
     "date_type": "單日",
@@ -29,10 +98,10 @@ const ALL_SAT_DATA = [
     "reiwa_year": "令和8年",
     "era_year": "令和8年",
     "month": 8,
-    "date_raw": "8月1日～9日",
-    "date_calc_raw": "8月1日～9日",
+    "date_raw": "8月1日～16日",
+    "date_calc_raw": "8月1日～16日",
     "date_type": "期間",
-    "event_count": 9,
+    "event_count": 16,
     "affected_dates": [
       1,
       2,
@@ -42,7 +111,14 @@ const ALL_SAT_DATA = [
       6,
       7,
       8,
-      9
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
     ],
     "excluded_dates": [],
     "time_raw": "02:50 UTC(P017)",
@@ -60,10 +136,10 @@ const ALL_SAT_DATA = [
     "reiwa_year": "令和8年",
     "era_year": "令和8年",
     "month": 8,
-    "date_raw": "8月1日～9日",
-    "date_calc_raw": "8月1日～9日",
+    "date_raw": "8月1日～16日",
+    "date_calc_raw": "8月1日～16日",
     "date_type": "期間",
-    "event_count": 9,
+    "event_count": 16,
     "affected_dates": [
       1,
       2,
@@ -73,7 +149,14 @@ const ALL_SAT_DATA = [
       6,
       7,
       8,
-      9
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
     ],
     "excluded_dates": [],
     "time_raw": "14:50 UTC(P089)",
@@ -41729,4 +41812,4 @@ const ALL_SAT_DATA = [
     "memo": "parser補完：依JMA表格原始文字復原"
   }
 ];
-const LAST_UPDATED = '2026-08-03 12:22:09';
+const LAST_UPDATED = '2026-08-10 11:03:15';
