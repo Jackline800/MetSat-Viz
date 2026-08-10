@@ -174,9 +174,11 @@
 
     .content-grid {
       display: grid;
-      grid-template-columns: 1.15fr 0.85fr;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 18px;
     }
+
+    .structure-panel { grid-column: 1 / -1; }
 
     .panel {
       padding: 28px;
@@ -224,6 +226,7 @@
       .hero-card { padding: 30px 24px; }
       .project-grid,
       .content-grid { grid-template-columns: 1fr; }
+      .structure-panel { grid-column: auto; }
 
       .section-heading {
         align-items: flex-start;
@@ -247,7 +250,7 @@
         <h1>氣象衛星遙測視覺化</h1>
         <p class="subtitle">
           透過直觀、互動式的網頁介面，呈現全球氣象衛星的分布現況、
-          技術演進與衛星產品架構。
+          技術演進、衛星產品架構與臺灣氣象測站資訊。
         </p>
       </div>
     </div>
@@ -299,13 +302,24 @@
             </p>
             <div class="project-link">開啟產品總覽 →</div>
           </a>
+
+          <a class="project-card" href="./TWStation/index.html" target="_blank" rel="noopener noreferrer">
+            <div class="project-icon">📍</div>
+            <div class="project-code">TWStation</div>
+            <h3>中央氣象署測站分布與歷史查詢</h3>
+            <p>
+              以互動式臺灣地圖呈現現存及已撤銷測站，支援站種、起始年份、
+              測站狀態與海拔分類多條件篩選。
+            </p>
+            <div class="project-link">開啟測站分布 →</div>
+          </a>
         </div>
       </div>
     </section>
 
     <section class="section">
       <div class="container content-grid">
-        <article class="panel">
+        <article class="panel structure-panel">
           <h2>🛠️ 架構說明</h2>
           <ul class="structure-list">
             <li><strong>SAT_PRO/</strong>：衛星軌道分布主程式與衛星影像資料庫。</li>
@@ -318,6 +332,10 @@
               <strong>SAT_Product/</strong>：衛星例行產品總覽圖，支援版面調整、
               圖片置換、文字編輯與 HTML 匯出。
             </li>
+            <li>
+              <strong>TWStation/</strong>：中央氣象署測站分布與歷史查詢，
+              測站資料、臺灣海岸線、樣式及互動邏輯均整合於 <code>index.html</code>，可單檔部署。
+            </li>
           </ul>
         </article>
 
@@ -329,6 +347,18 @@
             <li><strong>圖片置換</strong>：中心圖與產品圖皆可由使用者自行上傳。</li>
             <li><strong>可編輯文字</strong>：標題、中心文字與產品名稱可直接修改。</li>
             <li><strong>版面保存與匯出</strong>：可儲存設定並匯出目前版面 HTML。</li>
+          </ul>
+        </aside>
+
+        <aside class="panel">
+          <h2>📍 TWStation 功能重點</h2>
+          <ul class="feature-list">
+            <li><strong>完整測站資料</strong>：整合現存與已撤銷測站及其建站、撤站、位置與海拔資訊。</li>
+            <li><strong>多條件複選</strong>：站種、起始年份、測站狀態及海拔分類皆可複選並交叉篩選。</li>
+            <li><strong>互動式地圖</strong>：支援整張地圖縮放、拖曳平移與視圖重設。</li>
+            <li><strong>經緯度輔助</strong>：地圖邊框與格線顯示經緯度，方便判讀空間位置。</li>
+            <li><strong>測站資訊提示</strong>：滑鼠移至點位可查看站名、站號、日期、縣市、座標與海拔。</li>
+            <li><strong>單檔部署</strong>：資料、樣式及互動程式均整合於 <code>index.html</code>。</li>
           </ul>
         </aside>
       </div>
