@@ -41812,4 +41812,4 @@ const ALL_SAT_DATA = [
     "memo": "parser補完：依JMA表格原始文字復原"
   }
 ];
-const LAST_UPDATED = '2026-08-10 10:38:23';
+const LAST_UPDATED = '2026-08-10 11:03:15';
