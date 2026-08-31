@@ -5,6 +5,62 @@ const ALL_SAT_DATA = [
     "roc_year": 115,
     "reiwa_year": "令和8年",
     "era_year": "令和8年",
+    "month": 9,
+    "date_raw": "9月1日～6日",
+    "date_calc_raw": "9月1日～6日",
+    "date_type": "期間",
+    "event_count": 6,
+    "affected_dates": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "excluded_dates": [],
+    "time_raw": "02:50 UTC(P017)",
+    "p_code": "P017",
+    "fd": "X",
+    "reg": "O",
+    "event_jp": "衛星メンテナンス",
+    "event_tw": "衛星例行維護",
+    "memo": ""
+  },
+  {
+    "satellite": "H9",
+    "ad_year": 2026,
+    "roc_year": 115,
+    "reiwa_year": "令和8年",
+    "era_year": "令和8年",
+    "month": 9,
+    "date_raw": "9月1日～6日",
+    "date_calc_raw": "9月1日～6日",
+    "date_type": "期間",
+    "event_count": 6,
+    "affected_dates": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "excluded_dates": [],
+    "time_raw": "14:50 UTC(P089)",
+    "p_code": "P089",
+    "fd": "X",
+    "reg": "O",
+    "event_jp": "衛星メンテナンス",
+    "event_tw": "衛星例行維護",
+    "memo": ""
+  },
+  {
+    "satellite": "H9",
+    "ad_year": 2026,
+    "roc_year": 115,
+    "reiwa_year": "令和8年",
+    "era_year": "令和8年",
     "month": 8,
     "date_raw": "8月27日",
     "date_calc_raw": "8月27日",
@@ -190,10 +246,10 @@ const ALL_SAT_DATA = [
     "reiwa_year": "令和8年",
     "era_year": "令和8年",
     "month": 8,
-    "date_raw": "8月1日～30日",
-    "date_calc_raw": "8月1日～30日",
+    "date_raw": "8月1日～31日",
+    "date_calc_raw": "8月1日～31日",
     "date_type": "期間",
-    "event_count": 30,
+    "event_count": 31,
     "affected_dates": [
       1,
       2,
@@ -224,7 +280,8 @@ const ALL_SAT_DATA = [
       27,
       28,
       29,
-      30
+      30,
+      31
     ],
     "excluded_dates": [],
     "time_raw": "02:50 UTC(P017)",
@@ -242,10 +299,10 @@ const ALL_SAT_DATA = [
     "reiwa_year": "令和8年",
     "era_year": "令和8年",
     "month": 8,
-    "date_raw": "8月1日～30日",
-    "date_calc_raw": "8月1日～30日",
+    "date_raw": "8月1日～31日",
+    "date_calc_raw": "8月1日～31日",
     "date_type": "期間",
-    "event_count": 30,
+    "event_count": 31,
     "affected_dates": [
       1,
       2,
@@ -276,7 +333,8 @@ const ALL_SAT_DATA = [
       27,
       28,
       29,
-      30
+      30,
+      31
     ],
     "excluded_dates": [],
     "time_raw": "14:50 UTC(P089)",
@@ -41932,4 +41990,4 @@ const ALL_SAT_DATA = [
     "memo": "parser補完：依JMA表格原始文字復原"
   }
 ];
-const LAST_UPDATED = '2026-08-24 10:14:11';
+const LAST_UPDATED = '2026-08-31 14:18:50';
