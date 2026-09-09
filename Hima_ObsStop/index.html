@@ -91,6 +91,7 @@
         <h2 class="text-lg font-bold text-slate-950 mb-3" id="summary-title">📊 歷史事件統計摘要</h2>
         <section class="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6" id="summary-cards">
             </section>
+        <p class="text-xs text-slate-500 -mt-3 mb-6">連續休止時段計為 1 次事件；受影響觀測以 10 分鐘時次計算，包含起、迄時次。每日例行休止依實際日期計次，營運公告不計入。統計依 JMA 的事件起始年月歸類；時段內部分影像欠配仍計為受影響觀測。</p>
 
         <section class="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs mb-8">
             <div class="flex justify-between items-center mb-4">
@@ -165,6 +166,45 @@
                 }
             });
             return out;
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[char]));
+        }
+
+        function getEventCount(row) {
+            if (row.record_type === 'notice') return 0;
+            const count = Number(row.event_count);
+            return Number.isFinite(count) && count >= 0 ? count : 1;
+        }
+
+        function getObservationCount(row) {
+            if (row.record_type === 'notice') return 0;
+            // An explicit null means that the source cannot establish the count.
+            if (row.observation_count === null) return null;
+            if (row.observation_count !== undefined) {
+                const count = Number(row.observation_count);
+                return Number.isFinite(count) && count >= 0 ? count : null;
+            }
+            // Older data.js files only support a count for one known time per day.
+            const times = String(row.time_raw || '').match(/\d{1,2}:\d{2}/g) || [];
+            return times.length === 1 && row.time_type !== 'continuous' ? getEventCount(row) : null;
+        }
+
+        function summarizeRecords(rows) {
+            return rows.reduce((totals, row) => {
+                totals.events += getEventCount(row);
+                const observations = getObservationCount(row);
+                if (observations === null) totals.unknown += 1;
+                else totals.observations += observations;
+                return totals;
+            }, { events: 0, observations: 0, unknown: 0 });
+        }
+
+        function observationSummary(totals) {
+            return `${totals.observations} 筆${totals.unknown ? `（另 ${totals.unknown} 筆紀錄時次未確定）` : ''}`;
         }
 
         const EVENT_COLORS = {
@@ -283,28 +323,80 @@
         }
 
         function parseAndConvertTime(timeRaw, mode) {
-            if (!timeRaw || timeRaw.includes('—') || !timeRaw.includes(':')) return timeRaw;
-            
-            let match = timeRaw.match(/(\d{2}):(\d{2})/);
-            if (!match) return timeRaw;
-            
-            let hh = parseInt(match[1]);
-            let mm = parseInt(match[2]);
-            
-            if (mode === 'TW') {
-                let totalMinutes = hh * 60 + mm - 10;
-                if (totalMinutes < 0) totalMinutes += 24 * 60;
-                hh = Math.floor(totalMinutes / 60) % 24;
-                mm = totalMinutes % 60;
+            // Preserve every endpoint, date, P code and qualifier in legacy/raw data.
+            return escapeHtml(timeRaw || '—').replace(/(\d{1,2}):(\d{2})/g, (text, hour, minute) => {
+                const minutes = Number(hour) * 60 + Number(minute) - (mode === 'TW' ? 10 : 0);
+                const normalized = (minutes + 1440) % 1440;
+                const hh = String(Math.floor(normalized / 60)).padStart(2, '0');
+                const mm = String(normalized % 60).padStart(2, '0');
+                const previousDay = minutes < 0 ? ' <span class="text-xs text-blue-600">（前一日）</span>' : '';
+                return `<b class="text-slate-900">${hh}:${mm}</b>${previousDay}`;
+            }).replace(/\n/g, '<br>');
+        }
+
+        function convertedUtc(value, mode) {
+            if (!value) return null;
+            const instant = new Date(value);
+            if (!Number.isFinite(instant.getTime())) return null;
+            if (mode === 'TW') instant.setUTCMinutes(instant.getUTCMinutes() - 10);
+            return instant;
+        }
+
+        function formatUtcEndpoint(instant, pCode) {
+            const iso = instant.toISOString();
+            return `<span class="text-xs text-slate-500">${iso.slice(0, 10)}</span> <b class="text-slate-900">${iso.slice(11, 16)}</b> <span class="text-xs text-slate-400">UTC</span>${pCode ? ` (${escapeHtml(pCode)})` : ''}`;
+        }
+
+        function renderRecordTime(row, mode) {
+            if (row.record_type === 'notice') return parseAndConvertTime(row.time_raw, 'JMA');
+            if (row.time_precision === 'hour') {
+                return `${escapeHtml(row.time_raw)}<br><span class="text-xs text-slate-400">原文僅列小時，保留原始時間</span>`;
             }
-            
-            let pCodeMatch = timeRaw.match(/\((.*?)\)/);
-            let pSuffix = pCodeMatch ? ` (${pCodeMatch[1]})` : '';
-            
-            const hhStr = String(hh).padStart(2, '0');
-            const mmStr = String(mm).padStart(2, '0');
-            
-            return `<b class="text-slate-900">${hhStr}:${mmStr}</b> <span class="text-xs text-slate-400">UTC</span>${pSuffix}`;
+            if (row.time_type === 'continuous') {
+                const start = convertedUtc(row.start_utc, mode);
+                const end = convertedUtc(row.end_utc, mode);
+                if (start && end) {
+                    return `${formatUtcEndpoint(start, row.start_p_code || row.p_code)}<br><span class="text-slate-400">～</span> ${formatUtcEndpoint(end, row.end_p_code)}`;
+                }
+            }
+            return parseAndConvertTime(row.time_raw, mode);
+        }
+
+        function getDisplayDates(row, mode) {
+            if (row.record_type === 'notice') return [];
+            if (row.time_type === 'continuous') {
+                const start = convertedUtc(row.start_utc, mode);
+                const end = convertedUtc(row.end_utc, mode);
+                if (start && end && end >= start) {
+                    const dates = [];
+                    const cursor = new Date(`${start.toISOString().slice(0, 10)}T00:00:00Z`);
+                    const finalDate = end.toISOString().slice(0, 10);
+                    while (cursor.toISOString().slice(0, 10) <= finalDate) {
+                        dates.push(cursor.toISOString().slice(0, 10));
+                        cursor.setUTCDate(cursor.getUTCDate() + 1);
+                    }
+                    return dates;
+                }
+            }
+            let dates = Array.isArray(row.affected_dates_iso) ? row.affected_dates_iso : [];
+            if (!dates.length && Array.isArray(row.affected_dates)) {
+                dates = row.affected_dates.map(day => `${row.ad_year}-${String(row.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`);
+            }
+            const time = String(row.time_raw || '').match(/(\d{1,2}):(\d{2})/);
+            const shiftDay = mode === 'TW' && time && Number(time[1]) * 60 + Number(time[2]) < 10;
+            return [...new Set(dates.map(value => {
+                const date = new Date(`${value}T00:00:00Z`);
+                if (!Number.isFinite(date.getTime())) return '';
+                if (shiftDay) date.setUTCDate(date.getUTCDate() - 1);
+                return date.toISOString().slice(0, 10);
+            }).filter(Boolean))].sort();
+        }
+
+        function renderAffectedDates(row, mode) {
+            const dates = getDisplayDates(row, mode);
+            if (!dates.length) return '—';
+            if (dates.length <= 2) return dates.join('<br>');
+            return `<details><summary class="cursor-pointer">${dates[0]} ～ ${dates[dates.length - 1]}<br>共 ${dates.length} 日（展開日期）</summary><div class="mt-1 leading-relaxed">${dates.join('<br>')}</div></details>`;
         }
 
         function switchTimeMode(mode) {
@@ -324,12 +416,10 @@
 
         function renderSummary() {
             const filteredData = getFilteredData();
-            const counts = { '東西軌道控制': 0, '南北軌道控制': 0, '輻射計太陽校正': 0, '衛星例行維護': 0, '衛星檢修作業': 0, '其他': 0 };
-            
-            filteredData.forEach(d => {
-                const n = Number(d.event_count || 1);
-                if (counts[d.event_tw] !== undefined) counts[d.event_tw] += n;
-                else counts['其他'] += n;
+            const counts = {};
+            EVENT_TYPES.forEach(type => {
+                counts[type] = summarizeRecords(filteredData.filter(row =>
+                    (EVENT_TYPES.includes(row.event_tw) ? row.event_tw : '其他') === type));
             });
 
             const colors = {
@@ -346,7 +436,8 @@
                 html += `
                     <div class="bg-white p-4 rounded-xl border border-slate-200 border-l-4 ${colors[key] || 'border-l-slate-400'} shadow-2xs">
                         <span class="block text-xs font-medium text-slate-500 uppercase tracking-wider">${key}</span>
-                        <span class="text-xl font-bold block mt-1 text-slate-900">${val} <span class="text-xs font-normal text-slate-400">次</span></span>
+                        <span class="text-xl font-bold block mt-1 text-slate-900">${val.events} <span class="text-xs font-normal text-slate-400">次事件</span></span>
+                        <span class="block mt-1 text-xs text-slate-500">受影響觀測 ${observationSummary(val)}</span>
                     </div>`;
             }
             document.getElementById('summary-cards').innerHTML = html;
@@ -371,7 +462,7 @@
                     totalLineData.push(yrData.filter(d => {
                         const type = EVENT_TYPES.includes(d.event_tw) ? d.event_tw : '其他';
                         return activeFilters.includes(type);
-                    }).reduce((sum, d) => sum + Number(d.event_count || 1), 0));
+                    }).reduce((sum, d) => sum + getEventCount(d), 0));
                     
                     EVENT_TYPES.forEach(type => {
                         // 修改：如果該類型未被選中，則圖表數值填入 0
@@ -380,7 +471,7 @@
                         } else {
                             const count = yrData
                                 .filter(d => d.event_tw === type || (type === '其他' && !EVENT_TYPES.includes(d.event_tw)))
-                                .reduce((sum, d) => sum + Number(d.event_count || 1), 0);
+                                .reduce((sum, d) => sum + getEventCount(d), 0);
                             datasetMatrix[type].push(count);
                         }
                     });
@@ -396,7 +487,7 @@
                     totalLineData.push(monthData.filter(d => {
                         const type = EVENT_TYPES.includes(d.event_tw) ? d.event_tw : '其他';
                         return activeFilters.includes(type);
-                    }).reduce((sum, d) => sum + Number(d.event_count || 1), 0));
+                    }).reduce((sum, d) => sum + getEventCount(d), 0));
                     
                     EVENT_TYPES.forEach(type => {
                         // 修改：如果該類型未被選中，則圖表數值填入 0
@@ -405,7 +496,7 @@
                         } else {
                             const count = monthData
                                 .filter(d => d.event_tw === type || (type === '其他' && !EVENT_TYPES.includes(d.event_tw)))
-                                .reduce((sum, d) => sum + Number(d.event_count || 1), 0);
+                                .reduce((sum, d) => sum + getEventCount(d), 0);
                             datasetMatrix[type].push(count);
                         }
                     });
@@ -484,7 +575,8 @@
             let html = '';
             sortedKeys.forEach((key, index) => {
                 const group = grouped[key];
-                const totalEvents = group.list.reduce((sum, d) => sum + Number(d.event_count || 1), 0);
+                const totals = summarizeRecords(group.list);
+                const noticeCount = group.list.filter(row => row.record_type === 'notice').length;
                 
                 const isExpanded = index === 0; 
                 const contentStyle = isExpanded ? 'block' : 'hidden';
@@ -498,7 +590,7 @@
                                     📅 ${group.year}年 (${group.roc_year}年) — ${group.month}月份
                                 </span>
                                 <span class="text-xs font-normal text-slate-400">
-                                    篩選後共 <b class="text-slate-700 font-bold">${totalEvents}</b> 次紀錄
+                                    <b class="text-slate-700 font-bold">${totals.events}</b> 次事件 · 受影響觀測 ${observationSummary(totals)}${noticeCount ? ` · ${noticeCount} 則公告` : ''}
                                 </span>
                             </div>
                             <svg id="arrow-${index}" class="w-5 h-5 text-slate-400 transition-transform duration-200 ${arrowStyle}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -513,12 +605,14 @@
                                         <tr>
                                             <th class="px-4 py-2.5">衛星</th>
                                             <th class="px-4 py-2.5">日期原文</th>
+                                            <th class="px-4 py-2.5">受影響日期 (UTC)</th>
                                             <th class="px-3 py-2.5">類型</th>
                                             <th class="px-4 py-2.5">觀測休止時間 (UTC)</th>
                                             <th class="px-2 py-2.5 text-center">F.D.</th>
                                             <th class="px-2 py-2.5 text-center">Reg</th>
                                             <th class="px-5 py-2.5">事件類型 (繁體中文)</th>
-                                            <th class="px-3 py-2.5 text-center">統計次數</th>
+                                            <th class="px-3 py-2.5 text-center">事件次數</th>
+                                            <th class="px-3 py-2.5 text-center">受影響觀測筆數</th>
                                             <th class="px-4 py-2.5">排除日</th>
                                             <th class="px-4 py-2.5">原因/備註</th>
                                         </tr>
@@ -526,23 +620,34 @@
                                     <tbody class="divide-y divide-slate-150 bg-white text-slate-600">`;
 
                 group.list.forEach(row => {
-                    const displayTime = parseAndConvertTime(row.time_raw, currentMode);
+                    const displayTime = renderRecordTime(row, currentMode);
+                    const observationCount = getObservationCount(row);
+                    const dateType = row.record_type === 'notice' ? '營運公告' : row.time_type === 'continuous' ? '連續時段' : row.date_type;
+                    let eventText = escapeHtml(row.event_tw || '—').replace(/\n/g, '<br>');
+                    if (row.record_type === 'notice' && Object.values(JMA_URLS).includes(row.related_url)) {
+                        eventText = eventText.replace(/向日葵([89])號觀測休止紀錄請見此處/g,
+                            (_, sat) => `<a href="${escapeHtml(row.related_url)}" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline">查看向日葵${sat}號觀測休止紀錄 ↗</a>`);
+                    }
+                    const memoText = escapeHtml(row.memo_tw || row.memo || '—').replace(/\n/g, '<br>');
+                    const originalText = [row.event_jp, row.memo].filter(Boolean).join('\n');
                     const fdStyle = row.fd === 'X' ? 'text-rose-600 font-bold bg-rose-50/60' : 'text-emerald-600';
                     const regStyle = row.reg === 'X' ? 'text-rose-600 font-bold bg-rose-50/60' : 'text-emerald-600';
                     const satBadge = row.satellite === 'H9' ? 'bg-slate-900 text-white' : 'bg-slate-400 text-slate-950';
 
                     html += `
                                         <tr class="hover:bg-slate-50/50 transition-colors">
-                                            <td class="px-4 py-3"><span class="text-xs font-bold px-2 py-0.5 rounded-sm ${satBadge}">${row.satellite}</span></td>
-                                            <td class="px-4 py-3 text-slate-500 text-xs font-mono">${row.date_raw}${row.date_calc_raw && row.date_calc_raw !== row.date_raw ? `<br><span class="text-[10px] text-slate-400">計算: ${row.date_calc_raw}</span>` : ""}</td>
-                                            <td class="px-3 py-3"><span class="text-xs px-2 py-0.5 rounded-sm ${row.date_type === '期間' ? 'bg-purple-50 text-purple-700' : 'bg-slate-100 text-slate-600'}">${row.date_type}</span></td>
-                                            <td class="px-4 py-3">${displayTime}</td>
-                                            <td class="px-2 py-3 text-center ${fdStyle}">${row.fd}</td>
-                                            <td class="px-2 py-3 text-center ${regStyle}">${row.reg}</td>
-                                            <td class="px-5 py-3 font-medium text-slate-800">${row.event_tw}</td>
-                                            <td class="px-3 py-3 text-center text-slate-700 font-semibold">${Number(row.event_count || 1)}</td>
-                                            <td class="px-4 py-3 text-xs text-rose-500">${Array.isArray(row.excluded_dates) && row.excluded_dates.length ? row.excluded_dates.join('、') + '日' : '—'}</td>
-                                            <td class="px-4 py-3 text-xs text-slate-400">${row.memo || '—'}</td>
+                                            <td class="px-4 py-3"><span class="text-xs font-bold px-2 py-0.5 rounded-sm ${satBadge}">${escapeHtml(row.satellite)}</span></td>
+                                            <td class="px-4 py-3 text-slate-500 text-xs font-mono">${escapeHtml(row.date_raw).replace(/\n/g, '<br>')}${row.date_calc_raw && row.date_calc_raw !== row.date_raw ? `<br><span class="text-[10px] text-slate-400">計算: ${escapeHtml(row.date_calc_raw)}</span>` : ""}</td>
+                                            <td class="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">${renderAffectedDates(row, currentMode)}</td>
+                                            <td class="px-3 py-3"><span class="text-xs px-2 py-0.5 rounded-sm ${row.time_type === 'continuous' || row.date_type === '期間' ? 'bg-purple-50 text-purple-700' : 'bg-slate-100 text-slate-600'}">${escapeHtml(dateType)}</span></td>
+                                            <td class="px-4 py-3 whitespace-nowrap">${displayTime}</td>
+                                            <td class="px-2 py-3 text-center ${fdStyle}">${escapeHtml(row.fd || '—')}</td>
+                                            <td class="px-2 py-3 text-center ${regStyle}">${escapeHtml(row.reg || '—')}</td>
+                                            <td class="px-5 py-3 font-medium text-slate-800">${eventText}</td>
+                                            <td class="px-3 py-3 text-center text-slate-700 font-semibold">${getEventCount(row)}</td>
+                                            <td class="px-3 py-3 text-center text-slate-700 font-semibold">${observationCount === null ? '未確定' : observationCount}</td>
+                                            <td class="px-4 py-3 text-xs text-rose-500">${Array.isArray(row.excluded_dates) && row.excluded_dates.length ? escapeHtml(row.excluded_dates.join('、')) + '日' : '—'}</td>
+                                            <td class="px-4 py-3 text-xs text-slate-500">${memoText}${originalText ? `<details class="mt-2"><summary class="cursor-pointer text-slate-400">查看日文原文</summary><div class="mt-1 whitespace-pre-line">${escapeHtml(originalText)}</div></details>` : ''}</td>
                                         </tr>`;
                 });
 

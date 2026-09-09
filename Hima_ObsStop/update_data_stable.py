@@ -9,6 +9,8 @@ from html import unescape
 
 import requests
 from bs4 import BeautifulSoup
+from event_translation import EVENT_TRANSLATIONS, translate_event, translate_memo
+from observation_time import add_time_metadata, date_instances, extract_event_time, time_entries
 
 URLS = {
     "H9": "https://www.data.jma.go.jp/mscweb/ja/oper/opr_pause_H9.html",
@@ -17,18 +19,7 @@ URLS = {
 SCRIPT_DIR = Path(__file__).resolve().parent
 OUTPUT_JS = SCRIPT_DIR / "data.js"
 
-TERM_MAP = {
-    "東西軌道制御": "東西軌道控制",
-    "南北軌道制御": "南北軌道控制",
-    "放射計太陽校正": "輻射計太陽校正",
-    "衛星メンテナンス": "衛星例行維護",
-    "衛星保守作業": "衛星檢修作業",
-    "ひまわり": "向日葵",
-    "に代わり": "代替",
-    "で観測を行います": "執行觀測",
-    "から": "起",
-    "観測運用を開始します": "開始觀測運用",
-}
+TERM_MAP = EVENT_TRANSLATIONS
 
 EXCLUDE_PATTERN = r"(?:を)?(?:除く|除き|除外|除去)"
 
@@ -39,6 +30,7 @@ def normalize_text(text):
     return (
         str(text)
         .replace("\u3000", " ")
+        .replace("\xa0", " ")
         .replace("〜", "～")
         .replace("－", "-")
         .replace("―", "-")
@@ -52,7 +44,7 @@ def compact_spaces(text):
 
 
 def parse_year_string(year_str):
-    year_str = normalize_text(year_str)
+    year_str = normalize_text(year_str).replace("元年", "1年")
 
     # 令和：令和1年 = 西元2019年
     match_reiwa = re.search(r"令和(\d+)年", year_str)
@@ -85,10 +77,14 @@ def parse_year_string(year_str):
 
 
 def cell_text(cell):
-    # Preserve line breaks. Some JMA cells contain several visual records in
-    # one td separated only by <br>. If we use a blank separator, those records
-    # are merged and the second maintenance event disappears.
-    text = cell.get_text("\n", strip=True)
+    # Only visual breaks split entries. Inline links/spans must not create
+    # extra events, and superseded/cancelled struck-out text is not active.
+    copy = BeautifulSoup(str(cell), "html.parser")
+    for deleted in copy.find_all(["s", "del", "strike"]):
+        deleted.decompose()
+    for br in copy.find_all("br"):
+        br.replace_with("\n")
+    text = copy.get_text()
     lines = [compact_spaces(x) for x in text.splitlines()]
     lines = [x for x in lines if x]
     return "\n".join(lines)
@@ -286,7 +282,7 @@ def expand_visual_row(row, idx_date, idx_time, idx_fd, idx_reg, idx_event, idx_m
         return row[idx] if idx is not None and idx < len(row) else ""
 
     date_entries = make_date_entries(get(idx_date))
-    time_parts = split_lines(get(idx_time))
+    time_parts = time_entries(get(idx_time))
     fd_parts = split_lines(get(idx_fd))
     reg_parts = split_lines(get(idx_reg))
     event_parts = split_lines(get(idx_event))
@@ -295,6 +291,10 @@ def expand_visual_row(row, idx_date, idx_time, idx_fd, idx_reg, idx_event, idx_m
     # Use time/date visual lines as the main record count. Reuse event/F.D./Reg
     # when JMA uses a single merged value for multiple maintenance rows.
     n = max(len(time_parts), len(date_entries), 1)
+    if n == 1:
+        # An event/cause may be a sentence or several affected image types.
+        event_parts = [get(idx_event)]
+        memo_parts = [get(idx_memo)]
 
     expanded = []
     for i in range(n):
@@ -380,7 +380,7 @@ def recover_maintenance_rows_from_table_text(
 
 
 YEAR_MONTH_SECTION_PATTERN = re.compile(
-    r"(?:(?P<era>令和|平成)(?P<era_year>\d+)年|(?P<ad_year>(?:19|20)\d{2})年)\s*(?P<month>\d{1,2})月"
+    r"(?:(?P<era>令和|平成)(?P<era_year>\d+|元)年|(?P<ad_year>(?:19|20)\d{2})年)\s*(?P<month>\d{1,2})月"
 )
 
 
@@ -393,7 +393,7 @@ def source_html_to_text(source_html):
     them or move them outside the corresponding ``table`` element.
     """
     source_html = re.sub(
-        r"<!--.*?-->|<script\b.*?</script>|<style\b.*?</style>",
+        r"<!--.*?-->|<script\b.*?</script>|<style\b.*?</style>|<(?:s|del|strike)\b[^>]*>.*?</(?:s|del|strike)>",
         " ",
         source_html,
         flags=re.IGNORECASE | re.DOTALL,
@@ -447,141 +447,138 @@ def scrape_satellite_data(sat_code, url):
         "Cache-Control": "no-cache",
         "Pragma": "no-cache",
     }
-    try:
-        res = requests.get(url, headers=headers, timeout=30)
-        res.encoding = "utf-8"
-        soup = BeautifulSoup(res.text, "html.parser")
-        print(f"成功連線向日葵 {sat_code} 號網頁，開始解析...")
-    except Exception as e:
-        print(f"連線 {sat_code} 失敗: {e}")
-        return []
+    # Do not replace both satellites' history with a partial/HTTP-error result.
+    res = requests.get(url, headers=headers, timeout=30)
+    res.raise_for_status()
+    res.encoding = "utf-8"
+    print(f"成功連線向日葵 {sat_code} 號網頁，開始解析...")
+    return parse_satellite_html(sat_code, res.text)
 
+
+def finalize_record(record):
+    date_text = record.get("date_calc_raw") or record["date_raw"]
+    dates = date_instances(strip_exclusion_phrases(date_text), record["ad_year"], record["month"])
+    dates = [date for date in dates if date.day not in record["excluded_dates"]]
+    record["event_count"] = len(dates)
+    record["affected_dates"] = [date.day for date in dates
+                                if date.year == record["ad_year"] and date.month == record["month"]]
+    record["event_tw"] = translate_event(record["event_jp"])
+    record["memo_tw"] = translate_memo(record.get("memo", ""))
+    return add_time_metadata(record, dates)
+
+
+def parse_satellite_html(sat_code, source_html):
+    """Parse offline source identically to a fetched JMA history page."""
+    # JMA also uses the invalid closing tag </br> as a visual line break.
+    source_html = re.sub(r"</br\s*>", "<br>", source_html, flags=re.IGNORECASE)
+    soup = BeautifulSoup(source_html, "html.parser")
     records = []
-    current_year_txt = "令和8年"
-    current_month_txt = "1月"
-    main_content = soup.find("div", id="main") or soup.find("main") or soup.body
+    current_year_txt = None
+    current_month_txt = None
+    main_content = soup.find("div", id="main") or soup.find("main") or soup.body or soup
 
     for elem in main_content.find_all(["h2", "h3", "h4", "table"]):
         text = compact_spaces(elem.get_text(" ", strip=True))
         if not text:
             continue
-
-        if elem.name in ["h2", "h3", "h4"]:
-            year_match = re.search(r"(令和\d+年|平成\d+年|(?:19|20)\d{2}年)", text)
-            if year_match:
-                current_year_txt = year_match.group(1)
-            month_match = re.search(r"(\d{1,2})月", text)
-            if month_match:
-                current_month_txt = month_match.group(1) + "月"
+        # Most historical year/month labels are text INSIDE <table>, not h2.
+        # Read only the prefix before its first row, never dates in notices.
+        if elem.name == "table":
+            prefix = str(elem).split("<tr", 1)[0]
+            heading_text = source_html_to_text(prefix)
+        else:
+            heading_text = text
+        year_match = re.search(r"(令和(?:\d+|元)年|平成(?:\d+|元)年|(?:19|20)\d{2}年)", heading_text)
+        if year_match:
+            current_year_txt = year_match.group(1)
+        month_match = re.search(r"(\d{1,2})月", heading_text)
+        if month_match:
+            current_month_txt = month_match.group(1) + "月"
+        if elem.name != "table":
             continue
 
         grid = table_to_grid(elem)
         if not grid:
             continue
-
         headers = grid[0]
-        flat_headers = [h.replace("\n", " ") for h in headers]
-        if not any("期日" in h for h in flat_headers) or not any("観測休止" in h for h in flat_headers):
+        if not any("期日" in h for h in headers) or not any("観測休止" in h for h in headers):
             continue
-
+        if not current_year_txt or not current_month_txt:
+            raise ValueError(f"{sat_code}: observation table has no year/month heading")
         idx_date = header_index(headers, ["期日"], 0)
         idx_time = header_index(headers, ["観測休止"], 1)
         idx_fd = header_index(headers, ["F.D", "F.D."], 2)
         idx_reg = header_index(headers, ["Reg", "REG"], 3)
         idx_event = header_index(headers, ["運用", "障害"], 4)
-        idx_memo = header_index(headers, ["原因"], 5)
-
+        idx_memo = header_index(headers, ["原因"])
         ad_yr, roc_yr, era_year_clean = parse_year_string(current_year_txt)
         table_month_num = infer_month_from_text(current_month_txt, 1)
         last_period_date_raw = ""
 
         for row in grid[1:]:
-            max_idx = max(i for i in [idx_date, idx_time, idx_fd, idx_reg, idx_event] if i is not None)
-            if len(row) <= max_idx:
+            if len(row) <= max(idx_date, idx_time, idx_fd, idx_reg, idx_event):
+                continue
+            if len(set(row)) == 1:
+                # A colspan notice is one announcement, not six event fields.
+                notice = row[0]
+                notice_date = re.search(r"(\d{4})年(\d{1,2})月(\d{1,2})日", notice)
+                if not notice_date:
+                    continue
+                notice_year = int(notice_date[1])
+                notice_time, _ = extract_event_time(notice[notice_date.start():])
+                if not notice_time:
+                    continue
+                _, notice_roc, notice_era = parse_year_string(f"{notice_year}年")
+                records.append({
+                    "satellite": sat_code, "ad_year": notice_year,
+                    "roc_year": notice_roc, "reiwa_year": notice_era, "era_year": notice_era,
+                    "month": int(notice_date[2]), "date_raw": notice_date.group(),
+                    "date_calc_raw": notice_date.group(), "date_type": "營運公告",
+                    "record_type": "notice", "excluded_dates": [], "time_raw": notice_time,
+                    "p_code": "", "fd": "", "reg": "", "event_jp": notice, "memo": "",
+                })
+                history = re.search(r"ひまわり([89])号観測休止履歴はこちら", notice)
+                if history:
+                    records[-1]["related_url"] = URLS[f"H{history[1]}"]
                 continue
 
+            # Recover times and complete image descriptions embedded in the
+            # event column; do this before deciding whether the row is empty.
+            embedded_time, event_label = extract_event_time(row[idx_event])
+            if embedded_time and event_label:
+                if not row[idx_time]:
+                    row[idx_time] = embedded_time
+                row[idx_event] = event_label
+
             for rec in expand_visual_row(row, idx_date, idx_time, idx_fd, idx_reg, idx_event, idx_memo):
-                date_raw = rec["date_raw"]
-                time_raw = rec["time_raw"]
-                fd = rec["fd"]
-                reg = rec["reg"]
-                event_jp = rec["event_jp"]
-                memo = rec["memo"]
-
-                if not date_raw or not time_raw or not event_jp:
+                date_raw, time_raw = rec["date_raw"], rec["time_raw"]
+                if not date_raw or not time_raw or not rec["event_jp"]:
                     continue
-
+                if "中止" in rec["memo"]:
+                    continue
                 date_calc_raw = date_raw
                 if is_exclusion_only(date_raw) and last_period_date_raw:
                     date_calc_raw = f"{last_period_date_raw} {date_raw}"
                 else:
                     base_type, base_days = extract_affected_days(date_raw, 31)
                     if base_type in ["期間", "每日"] and base_days:
-                        last_period_date_raw = re.sub(
-                            r"[（(][^）)]*?" + EXCLUDE_PATTERN + r"[^）)]*[）)]",
-                            "",
-                            date_raw,
-                        ).strip()
-
+                        last_period_date_raw = strip_exclusion_phrases(date_raw)
                 month_num = infer_month_from_text(date_calc_raw, table_month_num)
                 _, days_in_month = calendar.monthrange(ad_yr, month_num)
-                exclude_dates = extract_exclude_dates(date_calc_raw, memo)
-                date_type, affected_dates = extract_affected_days(date_calc_raw, days_in_month)
-                if exclude_dates:
-                    affected_dates = [d for d in affected_dates if d not in exclude_dates]
-                event_count = len(affected_dates) if affected_dates else 1
+                date_type, _ = extract_affected_days(date_calc_raw, days_in_month)
+                records.append({
+                    "satellite": sat_code, "ad_year": ad_yr, "roc_year": roc_yr,
+                    "reiwa_year": era_year_clean, "era_year": era_year_clean, "month": month_num,
+                    "date_raw": date_raw, "date_calc_raw": date_calc_raw, "date_type": date_type,
+                    "excluded_dates": sorted(extract_exclude_dates(date_calc_raw, rec["memo"])),
+                    "time_raw": time_raw, "p_code": "", "fd": rec["fd"], "reg": rec["reg"],
+                    "event_jp": rec["event_jp"], "memo": rec["memo"],
+                })
 
-                event_tw = event_jp
-                for jp, tw in TERM_MAP.items():
-                    event_tw = event_tw.replace(jp, tw)
+    # Raw-source recovery preserves maintenance cells that have no valid tr.
+    records.extend(recover_maintenance_rows_from_page_source(source_html, sat_code))
+    return dedupe_records([finalize_record(record) for record in records])
 
-                p_match = re.search(r"[\(（]\s*(P\d+)\s*[\)）]", time_raw)
-                p_code = p_match.group(1) if p_match else ""
-
-                records.append(
-                    {
-                        "satellite": sat_code,
-                        "ad_year": ad_yr,
-                        "roc_year": roc_yr,
-                        "reiwa_year": era_year_clean,
-                        "era_year": era_year_clean,
-                        "month": month_num,
-                        "date_raw": date_raw,
-                        "date_calc_raw": date_calc_raw,
-                        "date_type": date_type,
-                        "event_count": event_count,
-                        "affected_dates": affected_dates,
-                        "excluded_dates": sorted(exclude_dates),
-                        "time_raw": time_raw,
-                        "p_code": p_code,
-                        "fd": fd,
-                        "reg": reg,
-                        "event_jp": event_jp,
-                        "event_tw": event_tw,
-                        "memo": memo,
-                    }
-                )
-
-        # JMA occasionally has cells that the browser displays as a row even
-        # though the source does not contain a valid <tr>. Recover those rows
-        # from the complete table text. dedupe_records() removes normal rows
-        # that were also found by this fallback.
-        records.extend(
-            recover_maintenance_rows_from_table_text(
-                text,
-                sat_code,
-                ad_yr,
-                roc_yr,
-                era_year_clean,
-                table_month_num,
-            )
-        )
-
-    # Second fallback: scan the original response source rather than each
-    # parsed table. This catches orphaned cells that BeautifulSoup moved
-    # outside the table element (the H9 2026/06 P089 case).
-    records.extend(recover_maintenance_rows_from_page_source(res.text, sat_code))
-    return records
 
 
 def _normalized_dedup_text(value):
@@ -845,6 +842,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--self-test", action="store_true", help="run parser self test and exit")
     parser.add_argument(
+        "--source-dir", type=Path,
+        help="parse saved H9.html and H8.html from this directory instead of fetching JMA",
+    )
+    parser.add_argument(
         "--output",
         default=str(OUTPUT_JS),
         help="output data.js path (default: same directory as this script)",
@@ -853,11 +854,20 @@ def main():
 
     if args.self_test:
         run_self_test()
+        import unittest
+        suite = unittest.defaultTestLoader.discover(str(SCRIPT_DIR), pattern="test_*.py")
+        if not unittest.TextTestRunner(verbosity=2).run(suite).wasSuccessful():
+            raise SystemExit(1)
         return
 
     all_satellite_data = []
     for sat_code, url in URLS.items():
-        sat_data = scrape_satellite_data(sat_code, url)
+        if args.source_dir:
+            sat_data = parse_satellite_html(sat_code, (args.source_dir / f"{sat_code}.html").read_text(encoding="utf-8"))
+        else:
+            sat_data = scrape_satellite_data(sat_code, url)
+        if not sat_data:
+            raise RuntimeError(f"{sat_code} 未解析出資料，已停止覆寫 data.js。")
         repaired = repair_maintenance_pairs(sat_data)
         sat_data = dedupe_records(sat_data)
         all_satellite_data.extend(sat_data)
