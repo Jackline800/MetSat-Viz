@@ -8,8 +8,6 @@ left intact so that a new JMA description cannot acquire an invented meaning.
 
 import re
 import unicodedata
-import json
-from pathlib import Path
 
 
 EVENT_TRANSLATIONS = {
@@ -57,11 +55,6 @@ _PHRASES = {
     _match_key(jp): tw
     for jp, tw in {**EVENT_TRANSLATIONS, **CAUSE_TRANSLATIONS}.items()
 }
-_LOG_TRANSLATIONS = {
-    _match_key(jp): tw for jp, tw in json.loads(
-        Path(__file__).with_name('event_log_translations.json').read_text(encoding='utf-8')
-    ).items()
-}
 _DATE_TIME = (
     r"(?P<date>\d{4}年\d{1,2}月\d{1,2}日)"
     r"(?P<time>\d{1,2}:\d{2})UTC(?:\((?P<pcode>P\d+)\))?"
@@ -96,8 +89,6 @@ def _timestamp(match):
 
 def _translate_clause(text):
     key = _match_key(text)
-    if key in _LOG_TRANSLATIONS:
-        return _LOG_TRANSLATIONS[key]
     if key in _PHRASES:
         return _PHRASES[key]
 
@@ -168,17 +159,3 @@ def translate_event(text):
 def translate_memo(text):
     """Translate the cause/remarks column using the same source-safe rules."""
     return translate_event(text)
-
-
-def translation_status(text):
-    """Flag even partially untranslated descriptions, including kanji-only text."""
-    source = str(text or '').strip()
-    if not source or _translate_clause(source) is not None:
-        return 'translated'
-    parts = [p.strip() for p in re.split(r'(?<=[。！？])\s*', source) if p.strip()]
-    if len(parts) <= 1:
-        parts = [p.strip() for p in source.splitlines() if p.strip()]
-    if len(parts) <= 1:
-        return 'source_retained'
-    states = {translation_status(part) for part in parts}
-    return states.pop() if len(states) == 1 else 'partial'

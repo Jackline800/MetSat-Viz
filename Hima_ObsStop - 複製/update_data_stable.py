@@ -11,8 +11,6 @@ import requests
 from bs4 import BeautifulSoup
 from event_translation import EVENT_TRANSLATIONS, translate_event, translate_memo
 from observation_time import add_time_metadata, date_instances, extract_event_time, time_entries
-from event_log import EVENT_URLS, parse_event_log
-from event_catalog import build_catalog
 
 URLS = {
     "H9": "https://www.data.jma.go.jp/mscweb/ja/oper/opr_pause_H9.html",
@@ -374,8 +372,7 @@ def recover_maintenance_rows_from_table_text(
                 "reg": match.group("reg"),
                 "event_jp": "衛星メンテナンス",
                 "event_tw": TERM_MAP["衛星メンテナンス"],
-                "memo": "",
-                "parsing_note": "依 JMA 表格原始文字復原缺失的列結構",
+                "memo": "parser補完：依JMA表格原始文字復原",
             }
         )
 
@@ -445,10 +442,6 @@ def recover_maintenance_rows_from_page_source(source_html, sat_code):
 
 
 def scrape_satellite_data(sat_code, url):
-    return parse_satellite_html(sat_code, fetch_html(url))
-
-
-def fetch_html(url):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
         "Cache-Control": "no-cache",
@@ -458,8 +451,8 @@ def fetch_html(url):
     res = requests.get(url, headers=headers, timeout=30)
     res.raise_for_status()
     res.encoding = "utf-8"
-    print(f"已讀取：{url}")
-    return res.text
+    print(f"成功連線向日葵 {sat_code} 號網頁，開始解析...")
+    return parse_satellite_html(sat_code, res.text)
 
 
 def finalize_record(record):
@@ -686,14 +679,13 @@ def print_check(records):
         print(f"{r.get('date_raw')} | {r.get('time_raw')} | {r.get('event_tw')} | count={r.get('event_count')} | exclude={r.get('excluded_dates', [])}")
 
 
-def write_data_js(records, output_js, source_stats=None):
+def write_data_js(records, output_js):
     output_path = Path(output_js).expanduser().resolve()
     output_path.parent.mkdir(parents=True, exist_ok=True)
     temp_path = output_path.with_suffix(output_path.suffix + ".tmp")
     with open(temp_path, "w", encoding="utf-8", newline="\n") as f:
         f.write(f"const ALL_SAT_DATA = {json.dumps(records, ensure_ascii=False, indent=2)};\n")
         f.write(f"const LAST_UPDATED = '{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}';\n")
-        f.write(f"const SOURCE_STATS = {json.dumps(source_stats or [], ensure_ascii=False)};\n")
     os.replace(temp_path, output_path)
     return output_path
 
@@ -851,7 +843,7 @@ def main():
     parser.add_argument("--self-test", action="store_true", help="run parser self test and exit")
     parser.add_argument(
         "--source-dir", type=Path,
-        help="parse H9_pause.html, H8_pause.html, H9_event.html and H8_event.html offline (H9.html/H8.html also accepted for pause pages)",
+        help="parse saved H9.html and H8.html from this directory instead of fetching JMA",
     )
     parser.add_argument(
         "--output",
@@ -869,14 +861,9 @@ def main():
         return
 
     all_satellite_data = []
-    log_data = []
-    source_stats = []
     for sat_code, url in URLS.items():
         if args.source_dir:
-            pause_path = args.source_dir / f"{sat_code}_pause.html"
-            if not pause_path.exists():
-                pause_path = args.source_dir / f"{sat_code}.html"
-            sat_data = parse_satellite_html(sat_code, pause_path.read_text(encoding="utf-8"))
+            sat_data = parse_satellite_html(sat_code, (args.source_dir / f"{sat_code}.html").read_text(encoding="utf-8"))
         else:
             sat_data = scrape_satellite_data(sat_code, url)
         if not sat_data:
@@ -886,26 +873,11 @@ def main():
         all_satellite_data.extend(sat_data)
         extra = f"，補完 {repaired} 筆" if repaired else ""
         print(f"-> 向日葵 {sat_code} 號解析完成，共 {len(sat_data)} 筆紀錄{extra}。")
-        event_html = ((args.source_dir / f"{sat_code}_event.html").read_text(encoding="utf-8")
-                      if args.source_dir else fetch_html(EVENT_URLS[sat_code]))
-        sat_logs = parse_event_log(sat_code, event_html)
-        log_data.extend(sat_logs)
-        source_stats.extend([
-            {"satellite": sat_code, "kind": "pause_history", "url": url, "records": len(sat_data)},
-            {"satellite": sat_code, "kind": "event_log", "url": EVENT_URLS[sat_code], "records": len(sat_logs)},
-        ])
-        print(f"-> {sat_code} 事件日誌 {len(sat_logs)} 筆（含處理方式變更）。")
 
     all_satellite_data = dedupe_records(all_satellite_data)
     print_check(all_satellite_data)
     validate_regression_records(all_satellite_data)
-    catalog = build_catalog(all_satellite_data, log_data)
-    merged = sum(len(r['sources']) > 1 for r in catalog)
-    print(f"[整合] {len(catalog)} 筆；{merged} 筆事件保留多個來源。")
-    untranslated = [r for r in catalog if r.get('translation_status') in ('partial', 'source_retained')]
-    if untranslated:
-        print(f"[翻譯] {len(untranslated)} 筆含未對應描述，網頁保留原文並標示；請檢視翻譯對照表。")
-    output_path = write_data_js(catalog, args.output, source_stats)
+    output_path = write_data_js(all_satellite_data, args.output)
     print(f"\n【完成】已寫入：{output_path}")
     print("請確認網頁載入的 data.js 正是上述路徑。")
 

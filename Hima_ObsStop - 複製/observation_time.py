@@ -134,8 +134,6 @@ def add_time_metadata(record, dates):
         # A date range + a clock range without endpoint dates repeats each day.
         recurring = len(dates) > 1 and not (start_match['day'] or end_match['day'])
         record['time_type'] = 'recurring_range' if recurring else 'continuous'
-        if recurring:
-            record['occurrence_dates_iso'] = [d.date().isoformat() for d in dates]
         record['date_type'] = '期間'
         record['event_count'] = len(dates) if recurring else 1
         span_minutes = int((end - start).total_seconds() / 60)

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<!-- ======================================================================= -->
+<html lang="ja">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+		<!-- Loading Bootstrap -->
+		<link href="/mscweb/ja/css/vendor/bootstrap/css/bootstrap-msc.min.css" rel="stylesheet">
+		<!-- Loading css -->
+		<link href="../css/honoka.min.css" rel="stylesheet">
+		<link rel="icon" type="image/png" href="/mscweb/lib/fig/jma.png">
+		<!-- HTML5 shim, for IE6-8 support of HTML5 elements. All other JS at the end of file. -->
+		<!--[if lt IE 9]>
+			<script src="../js/vendor/html5shiv.js"></script>
+			<script src="../js/vendor/respond.min.js"></script>
+		<![endif]-->
+		<link href="/mscweb/ja/css/new_msc.css" rel="stylesheet">
+		<!-- =================================================================== -->
+		<!--【要変更：タイトル：始】-->
+		<title>気象衛星センター ｜ ひまわり9号イベントログ</title>
+		<!--【要変更：タイトル：終】-->
+	</head>
+<!-- ======================================================================= -->
+<!-- タグ構造メモ
+	<body>
+		<div class="container">
+			<div class="row">
+				<div id="head"></div>
+			</div> 
+
+			<div class="row">
+				<div id="sub_menu" class="col-sm-4 col-sm-push-8"></div>
+				<div class="col-sm-8 col-sm-pull-4">
+					<div id="pan"></div>
+					<article></article>
+				</div>
+			</div> 
+			<div class="row">
+				<div id="footer"></div>
+			</div>
+		</div>
+	</body>
+-->
+<!-- ======================================================================= -->
+	<body>
+		<div class="container">
+<!-- ======================================================================= -->
+			<div class="row">
+				<!-- ヘッダ部分(jQueryで外部ファイルを読み込む) -->
+				<div id="head"></div>
+			</div> <!-- row -->
+<!-- ======================================================================= -->
+			<div class="row flex-row-reverse">
+				<!-- サイドメニュー部分 (4/12の大きさ,push-8で左揃え)-->
+				<div id="sub_menu" class="col-sm-4 col-xs-12 d-flex flex-fill flex-column order-first order-sm-first align-self-start"></div>
+<!-- ======================================================================= -->
+				<!-- メインコンテンツ (8/12の大きさ,pull-4で右揃え)-->
+				<div class="d-flex flex-column col-sm-8 col-xs-12 align-top">
+<!-- ======================================================================= -->
+					<!-- パンくずリスト (jQueryで設定を書き込む）-->
+					<div id="pan">
+						<ol id="breadcrumb_list" class="breadcrumb"></ol>
+					</div>
+<!-- ======================================================================= -->
+<!-- メインコンテンツはここから -->
+<article>
+	<h1 id="top">ひまわり9号イベントログ</h1>
+	<p class="text">
+このページでは、観測休止・軌道制御・配信資料の品質低下情報・観測データの処理方法やフォーマット変更等の履歴を提供します。 
+	</p>
+	<!-- ================================================================= -->
+	<h2 id="pause">観測休止履歴</h2>
+	<ul>
+		<li>観測休止履歴は、「ひまわり9号　観測運用情報</a>」の<a href="./opr_pause_H9.html">観測休止履歴</a>をご覧下さい。</li>
+	</ul>
+	<h2 id="bultin">軌道制御履歴</h2>
+	<ul>
+		<li>軌道制御の履歴は、「ひまわり9号　観測運用情報」の<a href="./bulletin_list_H9.html">観測運用計画</a>をご覧下さい。</li>
+	</ul>
+	<h2 id="data">配信資料の品質低下情報の履歴</h2>
+	<dl>
+		<dt>2026年8月20日 20:30UTC（P123）</dt>
+			<dd>全球観測バンド7、13～16および日本域観測全バンドの画像品質に一部の性能低下がありました。</dd>
+		<dt>2026年8月12日 12:10UTC（P073）</dt>
+			<dd>強雨による衛星・地上間の通信異常により、バンド16の赤道面付近でノイズが現れる異常が発生しました。</dd>
+		<dt>2026年3月10日 05:30 UTC (P034) - 06:20 UTC (P039)</dt>
+			<dd>衛星搭載観測センサー（AHI）の機能の一時的な異常により、バンド7～16の画像品質に一部の性能低下がありました。</dd>
+		<dt>2025年12月31日 00:10 UTC (P001) - 00:50 UTC (P005)</dt>
+			<dd>地上システムの障害により、全観測画像およびプロダクトが欠落しました。</dd>
+		<dt>2025年8月16日 14:50 UTC（P089）- 2025年8月18日 05:50 UTC（P035）</dt>
+			<dd>衛星搭載観測センサー（AHI）の検出素子の一つが出力不安定となり、ひまわり9号バンド12の画像データで線状のノイズが現れる異常が発生しました。</dd>
+		<dt>2025年2月28日 00:10UTC（P001）</dt>
+			<dd>バンド12で画像データの一部に品質異常が発生しました。</dd>
+		<dt>2025年2月14日 04:40 UTC（P028）</dt>
+			<dd>衛星搭載観測センサー（AHI）のバンド12の検出素子の一つが出力不安定となっている期間、月の影響で画像データの一部に品質異常が発生すると予想されています。詳細は下記を参照してください。</dd>
+			<ul>
+				<li><a href="/mscweb/ja/info/pdf/20250214_Himawari9-Moon-Interference_(ja).pdf">月の影響による一部の気象衛星関連プロダクトへの影響について（令和7年2月14日）</a></li>
+			</ul>
+		<dt>2025年2月12日 17:40 UTC（P106）</dt>
+			<dd>衛星搭載観測センサー（AHI）の検出素子の一つが出力不安定となり、ひまわり9号バンド12の画像データで線状のノイズが現れる異常が発生しました</dd>
+		<dt>2025年1月26日 00:10 UTC (P001)</dt>
+			<dd>地上システムの障害により、全観測画像およびプロダクトが欠落しました。</dd>
+		<dt>2025年1月21日 16:30 UTC (P099) - 17:40 UTC (P106)</dt>
+			<dd>衛星保守の延長により、観測を休止しました。<br />参考：<a href="//www.data.jma.go.jp/mscweb/ja/info/pdf/20250122_Himawari9_Maintenance(ja).pdf">「ひまわり 9 号」の定期保守作業に伴う気象衛星関連プロダクトの計画休止について</a></dd>
+		<dt>2025年1月19日 09:40 UTC (P058) - 11:20 UTC (P068)</dt>
+			<dd>地上システムの障害により、画像およびプロダクトの一部が配信ができませんでした。また、配信した画像あるいはプロダクトの一部は品質が低下している可能性があります。</dd>
+		<dt>2024年12月12日 02:50 UTC - 03:20 UTC</dt>
+			<dd>地上システムの障害により、HimawariCastから配信ができませんでした。</dd>
+		<dt>2024年12月6日 17:50 UTC（P107） - 12月9日 07:40 UTC（P046）</dt>
+			<dd>衛星搭載観測センサー（AHI）の検出素子の一つが出力不安定となり、ひまわり9号バンド9の画像データで線状のノイズが現れる異常が発生しました。</dd>
+		<dt>2024年11月10日 19:50 UTC - 11月11日 09:00 UTC</dt>
+			<dd>衛星本体の障害により画像品質低下</dd>
+		<dt>2024年10月19日 14:50 UTC - 16:00  UTC</dt>
+			<dd>地上システムの障害により、HimawariCastから一部のLRIT画像の配信ができませんでした。</dd>
+		<dt>2024年10月12日 02:50 UTC - 10月13日 01:07 UTC</dt>
+			<dd>地上システムの障害により、HimawariCloudからの画像提供が遅れました。</dd>
+		<dt>2024年7月22日 20:10 UTC（P134） - 7月23日 07:30 UTC（P045）</dt>
+			<dd>衛星搭載観測センサー（AHI）の検出素子の一つが出力不安定となり、ひまわり9号バンド12の画像データで線状のノイズが現れる異常が発生しました。</dd>
+		<dt>2024年4月11日 03:00 UTC (P018) - 03:10 UTC (P019)</dt>
+			<dd>地上システムの障害により、画像の位置合わせ精度の劣化が発生しました。</dd>
+		<dt>2024年1月29日 07:10 UTC - 07:40 UTC</dt>
+			<dd>JCSAT-2Bの地上システムの障害により、HimawariCastから配信ができませんでした。</dd>
+		<dt>2023年10月17日 00:10 UTC - 10月19日 01:10 UTC</dt>
+			<dd>衛星搭載観測センサー（AHI）の検出素子の一つが出力不安定となり、ひまわり9号バンド8の画像データで線状のノイズが現れる異常が発生しました。</dd>
+		<dt>2023年7月28日 18:30 UTC (P112)</dt>
+			<dd>衛星本体の障害により、全球観測、日本域観測の一部が欠損しました。</dd>
+		<dt>2023年6月11日 15:59 UTC - 16:43 UTC</dt>
+			<dd>地上システムの緊急保守により、HimawariCloudからの画像提供が遅れました。</dd>
+		<dt>2023年3月22日 14:38 UTC - 15:15 UTC</dt>
+			<dd>地上システムの障害により、HimawariCloudからの画像提供が遅れました。</dd>
+		<dt>2023年3月10日 00:35 UTC - 01:25 UTC</dt>
+			<dd>地上システムの障害により、HimawariCloudからの画像提供が遅れました。</dd>
+		<dt>2023年3月8日 10:35 UTC - 10:58 UTC</dt>
+			<dd>地上システムの障害により、HimawariCloudからの画像提供が遅れました。</dd>
+		<dt>2023年2月10日 05:10 UTC (P031)</dt>
+			<dd>地上処理の不具合により、バンド16の赤道面付近でノイズが現れる異常が発生しました。</dd>
+		<dt>2023年2月2日 07:10 UTC (P043)、07:50 UTC (P047)</dt>
+			<dd>地上システムの障害により、HimawariCastから配信ができませんでした。</dd>
+		<dt>2022年12月20日 12:18 UTC - 12:29 UTC</dt>
+			<dd>地上システムの障害により、HimawariCloudからの画像提供が遅れました。</dd>
+
+
+	</dl>
+	<h2 id="change">観測データの処理方法の変更履歴</h2>
+	<ul>
+		<li><del>2025年10月21日 07:00 UTC (16:00 JST)</del> 2025年12月16日 07:00 UTC (16:00 JST) (<a href="./pdf/Update_of_Calibration_Information_2025(jp)-2.pdf">ひまわり9号の可視・近赤外バンドの感度補正のための校正情報更新について</a>）</li>
+		<li>2025年3月24日 03:00 UTC (12:00 JST)&nbsp;(<a href="https://www.data.jma.go.jp/suishin/jyouhou/pdf/644.pdf">ひまわり９号の可視・近赤外バンドのストライプノイズ軽減について</a>)
+		<li>2017年7月25日 04:00UTC(13:00JST)&nbsp;(<a href="./pdf/20170707_Add_Sensor_Sensitivity_Trend_Correction_to_HSF_and_Improvement_of_Himawari-8_ja.pdf">ひまわり標準データヘッダーブロックへの新規情報の追加等について</a>)
+			<ul>
+				<li>ひまわり標準データのヘッダー部に、可視・近赤外バンドのセンサ特性の経年変化を補正するためのヘッダ情報の追加</li>
+				<li>観測データの品質向上(可視・近赤外バンドの校正一次係数の更新等)</li>
+			</ul>
+		</li>
+	<!-- ================================================================= -->
+</article>
+<!-- メインコンテンツはここまで -->
+<!-- ======================================================================= -->
+</div>　<!-- <div class="col-sm-8 col-sm-pull-4"> -->
+<!-- ======================================================================= -->
+			</div> <!-- row -->
+<!-- ======================================================================= -->
+			<!-- フッター部分 -->
+			<div class="row">
+				<div id="footer"></div>			</div> <!-- row -->
+<!-- ======================================================================= -->
+		</div> <!-- container -->
+<!-- ======================================================================= -->
+		<script src="../js/vendor/jquery-msc.min.js"></script>
+		<script src="../js/vendor/video.js"></script>
+		<script src="../js/bootstrap-msc.min.js"></script>
+		<script src="../js/msc.js"></script>
+		<script type="text/javascript">
+			/* =================================================================== */
+			/* ページの各種設定 */
+			var gnav_id="operation";/* グローバルナビのactive項目の設定 */
+			var url_top="../../ja/oper/head_operation.html";
+			var url_menu="../../ja/oper/menu_operation.html";
+			var url_footer="../../ja/footer.html";  /* フッターファイル */
+			var breadList = [		/* パンくずリスト */
+				"TOP",
+				"運用情報",
+				"ひまわり9号イベントログ",
+			];
+			/* =================================================================== */
+			$(function(){
+				/* ヘッダーの読み込みと現在位置の指定 (<div id="head">に読み込む)*/
+				insert_top(url_top,gnav_id);
+				/* サイドメニューの読み込み (<div id="sub_menu">に読み込む) */
+				insert_menu(url_menu,gnav_id);
+				/* フッターの読み込み (<div id="footer">に読み込む) */
+				insert_footer(url_footer);
+				/* 画面スクロールでページャーの表示・非表示の切り替え */
+				toTop();
+				/* パンくずリスト 項目の追加*/
+				add_breadcrumb(breadList,gnav_id);
+			});
+			/* =================================================================== */
+		</script>
+	</body>
+</html>
