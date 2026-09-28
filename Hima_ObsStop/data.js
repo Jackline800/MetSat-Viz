@@ -124076,5 +124076,5 @@ const ALL_SAT_DATA = [
     "title_tw": "衛星例行維護"
   }
 ];
-const LAST_UPDATED = '2026-09-21 13:35:00';
+const LAST_UPDATED = '2026-09-28 14:00:20';
 const SOURCE_STATS = [{"satellite": "H9", "kind": "pause_history", "url": "https://www.data.jma.go.jp/mscweb/ja/oper/opr_pause_H9.html", "records": 490}, {"satellite": "H9", "kind": "event_log", "url": "https://www.data.jma.go.jp/mscweb/ja/oper/event_H9.html", "records": 31}, {"satellite": "H8", "kind": "pause_history", "url": "https://www.data.jma.go.jp/mscweb/ja/oper/opr_pause_H8.html", "records": 975}, {"satellite": "H8", "kind": "event_log", "url": "https://www.data.jma.go.jp/mscweb/ja/oper/event_H8.html", "records": 82}];
