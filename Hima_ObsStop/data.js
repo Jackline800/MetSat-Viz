@@ -5,6 +5,142 @@ const ALL_SAT_DATA = [
     "roc_year": 115,
     "reiwa_year": "令和8年",
     "era_year": "令和8年",
+    "month": 11,
+    "date_raw": "11月1日～1日",
+    "date_calc_raw": "11月1日～1日",
+    "date_type": "期間",
+    "excluded_dates": [],
+    "time_raw": "14:50 UTC(P089)",
+    "p_code": "P089",
+    "fd": "X",
+    "reg": "O",
+    "event_jp": "衛星メンテナンス",
+    "memo": "",
+    "event_count": 1,
+    "affected_dates": [
+      1
+    ],
+    "event_tw": "衛星例行維護",
+    "memo_tw": "",
+    "record_type": "event",
+    "observation_count": 1,
+    "time_type": "point",
+    "affected_dates_iso": [
+      "2026-11-01"
+    ],
+    "start_utc": "2026-11-01T14:50:00Z",
+    "start_p_code": "P089",
+    "time_precision": "minute",
+    "category": "pause",
+    "categories": [
+      "pause"
+    ],
+    "id": "H9-history-ce7082b63131eac6",
+    "sources": [
+      {
+        "kind": "pause_history",
+        "url": "https://www.data.jma.go.jp/mscweb/ja/oper/opr_pause_H9.html",
+        "section": "pause",
+        "date_raw": "11月1日～1日",
+        "time_raw": "14:50 UTC(P089)",
+        "description_jp": "衛星メンテナンス",
+        "time_role": "observation",
+        "start_utc": "2026-11-01T14:50:00Z",
+        "end_utc": null,
+        "start_p_code": "P089",
+        "end_p_code": null
+      }
+    ],
+    "time_role": "observation",
+    "status": "reported",
+    "temporal_pattern": "point",
+    "impact_tags": [],
+    "bands": [],
+    "regions": [],
+    "services": [],
+    "products": [],
+    "service_intervals": [],
+    "attachments": [],
+    "covered_slot_count": 1,
+    "translation_status": "translated",
+    "change_count": 0,
+    "notice_count": 0,
+    "title_tw": "衛星例行維護"
+  },
+  {
+    "satellite": "H9",
+    "ad_year": 2026,
+    "roc_year": 115,
+    "reiwa_year": "令和8年",
+    "era_year": "令和8年",
+    "month": 11,
+    "date_raw": "11月1日～1日",
+    "date_calc_raw": "11月1日～1日",
+    "date_type": "期間",
+    "excluded_dates": [],
+    "time_raw": "02:50 UTC(P017)",
+    "p_code": "P017",
+    "fd": "X",
+    "reg": "O",
+    "event_jp": "衛星メンテナンス",
+    "memo": "",
+    "event_count": 1,
+    "affected_dates": [
+      1
+    ],
+    "event_tw": "衛星例行維護",
+    "memo_tw": "",
+    "record_type": "event",
+    "observation_count": 1,
+    "time_type": "point",
+    "affected_dates_iso": [
+      "2026-11-01"
+    ],
+    "start_utc": "2026-11-01T02:50:00Z",
+    "start_p_code": "P017",
+    "time_precision": "minute",
+    "category": "pause",
+    "categories": [
+      "pause"
+    ],
+    "id": "H9-history-868c8d2593bdd614",
+    "sources": [
+      {
+        "kind": "pause_history",
+        "url": "https://www.data.jma.go.jp/mscweb/ja/oper/opr_pause_H9.html",
+        "section": "pause",
+        "date_raw": "11月1日～1日",
+        "time_raw": "02:50 UTC(P017)",
+        "description_jp": "衛星メンテナンス",
+        "time_role": "observation",
+        "start_utc": "2026-11-01T02:50:00Z",
+        "end_utc": null,
+        "start_p_code": "P017",
+        "end_p_code": null
+      }
+    ],
+    "time_role": "observation",
+    "status": "reported",
+    "temporal_pattern": "point",
+    "impact_tags": [],
+    "bands": [],
+    "regions": [],
+    "services": [],
+    "products": [],
+    "service_intervals": [],
+    "attachments": [],
+    "covered_slot_count": 1,
+    "translation_status": "translated",
+    "change_count": 0,
+    "notice_count": 0,
+    "title_tw": "衛星例行維護"
+  },
+  {
+    "satellite": "H9",
+    "ad_year": 2026,
+    "roc_year": 115,
+    "reiwa_year": "令和8年",
+    "era_year": "令和8年",
     "month": 10,
     "date_raw": "10月22日",
     "date_calc_raw": "10月22日",
@@ -550,8 +686,8 @@ const ALL_SAT_DATA = [
     "reiwa_year": "令和8年",
     "era_year": "令和8年",
     "month": 10,
-    "date_raw": "10月1日～25日",
-    "date_calc_raw": "10月1日～25日",
+    "date_raw": "10月1日～31日",
+    "date_calc_raw": "10月1日～31日",
     "date_type": "期間",
     "excluded_dates": [],
     "time_raw": "14:50 UTC(P089)",
@@ -560,7 +696,7 @@ const ALL_SAT_DATA = [
     "reg": "O",
     "event_jp": "衛星メンテナンス",
     "memo": "",
-    "event_count": 25,
+    "event_count": 31,
     "affected_dates": [
       1,
       2,
@@ -586,12 +722,18 @@ const ALL_SAT_DATA = [
       22,
       23,
       24,
-      25
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31
     ],
     "event_tw": "衛星例行維護",
     "memo_tw": "",
     "record_type": "event",
-    "observation_count": 25,
+    "observation_count": 31,
     "time_type": "point",
     "affected_dates_iso": [
       "2026-10-01",
@@ -618,7 +760,13 @@ const ALL_SAT_DATA = [
       "2026-10-22",
       "2026-10-23",
       "2026-10-24",
-      "2026-10-25"
+      "2026-10-25",
+      "2026-10-26",
+      "2026-10-27",
+      "2026-10-28",
+      "2026-10-29",
+      "2026-10-30",
+      "2026-10-31"
     ],
     "start_utc": "2026-10-01T14:50:00Z",
     "start_p_code": "P089",
@@ -627,13 +775,13 @@ const ALL_SAT_DATA = [
     "categories": [
       "pause"
     ],
-    "id": "H9-history-0b0eeaeb67522606",
+    "id": "H9-history-497d675a45cbfd5d",
     "sources": [
       {
         "kind": "pause_history",
         "url": "https://www.data.jma.go.jp/mscweb/ja/oper/opr_pause_H9.html",
         "section": "pause",
-        "date_raw": "10月1日～25日",
+        "date_raw": "10月1日～31日",
         "time_raw": "14:50 UTC(P089)",
         "description_jp": "衛星メンテナンス",
         "time_role": "observation",
@@ -653,7 +801,7 @@ const ALL_SAT_DATA = [
     "products": [],
     "service_intervals": [],
     "attachments": [],
-    "covered_slot_count": 25,
+    "covered_slot_count": 31,
     "translation_status": "translated",
     "change_count": 0,
     "notice_count": 0,
@@ -666,8 +814,8 @@ const ALL_SAT_DATA = [
     "reiwa_year": "令和8年",
     "era_year": "令和8年",
     "month": 10,
-    "date_raw": "10月1日～25日",
-    "date_calc_raw": "10月1日～25日",
+    "date_raw": "10月1日～31日",
+    "date_calc_raw": "10月1日～31日",
     "date_type": "期間",
     "excluded_dates": [],
     "time_raw": "02:50 UTC(P017)",
@@ -676,7 +824,7 @@ const ALL_SAT_DATA = [
     "reg": "O",
     "event_jp": "衛星メンテナンス",
     "memo": "",
-    "event_count": 25,
+    "event_count": 31,
     "affected_dates": [
       1,
       2,
@@ -702,12 +850,18 @@ const ALL_SAT_DATA = [
       22,
       23,
       24,
-      25
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31
     ],
     "event_tw": "衛星例行維護",
     "memo_tw": "",
     "record_type": "event",
-    "observation_count": 25,
+    "observation_count": 31,
     "time_type": "point",
     "affected_dates_iso": [
       "2026-10-01",
@@ -734,7 +888,13 @@ const ALL_SAT_DATA = [
       "2026-10-22",
       "2026-10-23",
       "2026-10-24",
-      "2026-10-25"
+      "2026-10-25",
+      "2026-10-26",
+      "2026-10-27",
+      "2026-10-28",
+      "2026-10-29",
+      "2026-10-30",
+      "2026-10-31"
     ],
     "start_utc": "2026-10-01T02:50:00Z",
     "start_p_code": "P017",
@@ -743,13 +903,13 @@ const ALL_SAT_DATA = [
     "categories": [
       "pause"
     ],
-    "id": "H9-history-6fb327180cb36d46",
+    "id": "H9-history-84fd7ecf71d31b22",
     "sources": [
       {
         "kind": "pause_history",
         "url": "https://www.data.jma.go.jp/mscweb/ja/oper/opr_pause_H9.html",
         "section": "pause",
-        "date_raw": "10月1日～25日",
+        "date_raw": "10月1日～31日",
         "time_raw": "02:50 UTC(P017)",
         "description_jp": "衛星メンテナンス",
         "time_role": "observation",
@@ -769,7 +929,7 @@ const ALL_SAT_DATA = [
     "products": [],
     "service_intervals": [],
     "attachments": [],
-    "covered_slot_count": 25,
+    "covered_slot_count": 31,
     "translation_status": "translated",
     "change_count": 0,
     "notice_count": 0,
@@ -124704,5 +124864,5 @@ const ALL_SAT_DATA = [
     "title_tw": "衛星例行維護"
   }
 ];
-const LAST_UPDATED = '2026-10-19 13:25:10';
-const SOURCE_STATS = [{"satellite": "H9", "kind": "pause_history", "url": "https://www.data.jma.go.jp/mscweb/ja/oper/opr_pause_H9.html", "records": 498}, {"satellite": "H9", "kind": "event_log", "url": "https://www.data.jma.go.jp/mscweb/ja/oper/event_H9.html", "records": 31}, {"satellite": "H8", "kind": "pause_history", "url": "https://www.data.jma.go.jp/mscweb/ja/oper/opr_pause_H8.html", "records": 975}, {"satellite": "H8", "kind": "event_log", "url": "https://www.data.jma.go.jp/mscweb/ja/oper/event_H8.html", "records": 82}];
+const LAST_UPDATED = '2026-10-26 13:29:15';
+const SOURCE_STATS = [{"satellite": "H9", "kind": "pause_history", "url": "https://www.data.jma.go.jp/mscweb/ja/oper/opr_pause_H9.html", "records": 500}, {"satellite": "H9", "kind": "event_log", "url": "https://www.data.jma.go.jp/mscweb/ja/oper/event_H9.html", "records": 31}, {"satellite": "H8", "kind": "pause_history", "url": "https://www.data.jma.go.jp/mscweb/ja/oper/opr_pause_H8.html", "records": 975}, {"satellite": "H8", "kind": "event_log", "url": "https://www.data.jma.go.jp/mscweb/ja/oper/event_H8.html", "records": 82}];
